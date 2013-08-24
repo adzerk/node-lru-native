@@ -20,14 +20,14 @@ class LRUCache : public node::ObjectWrap
 {
 
 public:
-	static void init(Handle<Object> exports);
+  static void init(Handle<Object> exports);
 
 private:
-	LRUCache();
-	~LRUCache();
+  LRUCache();
+  ~LRUCache();
   void Evict();
 
-	typedef std::list< std::string > KeyList;
+  typedef std::list< std::string > KeyList;
 
   struct HashEntry
   {
@@ -45,15 +45,15 @@ private:
 
   typedef unordered_map< std::string, HashEntry > HashMap;
 
-	HashMap data;
-	KeyList lru;
+  HashMap data;
+  KeyList lru;
 
-	size_t maxElements;
+  size_t maxElements;
   unsigned long maxAge;
 
-	static Handle<Value> New(const Arguments &args);
-	static Handle<Value> Get(const Arguments &args);
-	static Handle<Value> Set(const Arguments &args);
+  static Handle<Value> New(const Arguments &args);
+  static Handle<Value> Get(const Arguments &args);
+  static Handle<Value> Set(const Arguments &args);
   static Handle<Value> Remove(const Arguments &args);
 
 };
