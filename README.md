@@ -14,7 +14,7 @@ Rather than rely on V8 to figure out what we're trying to do, `node-lru-native` 
 `std::unordered_map` from C++11. A `std::list` is used to track accesses so we can evict the least-recently-used
 item when necessary.
 
-Based on the [node-hashtable](https://github.com/isaacbwagner/node-hashtable) library by Issac B. Wager.
+Based on the [node-hashtable](https://github.com/isaacbwagner/node-hashtable) library by Issac Wagner.
 
 # Usage
 
@@ -44,14 +44,17 @@ var cache = new LRUCache({
   // Default: 0, meaning there is no maximum.
   maxElements: 10000,
 
-  // The maximum age (in milliseconds) of an item. The item will be removed if get() is called and the item is too old.
+  // The maximum age (in milliseconds) of an item.
+  // The item will be removed if get() is called and the item is too old.
   // Default: 0, meaning items will never expire.
   maxAge: 60000,
 
-  // The initial number of items for which space should be allocated. The cache will resize dynamically if necessary.
+  // The initial number of items for which space should be allocated.
+  // The cache will resize dynamically if necessary.
   size: 1000,
 
-  // The maximum load factor for buckets in the unordered_map. Typically you won't need to change this.
+  // The maximum load factor for buckets in the unordered_map.
+  // Typically you won't need to change this.
   maxLoadFactor: 2.0
 
 });
