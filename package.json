@@ -1,5 +1,5 @@
 {
-  "name": "node-lru-native",
+  "name": "lru-native",
   "version": "0.1.0",
   "description": "a native LRU cache implementation",
   "devDependencies": {

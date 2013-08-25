@@ -35,7 +35,7 @@ var value = cache.get('some-key');
 
 # Configuration
 
-To configure the cache, you can pass a hash to the LRUCache constructor with the following options:
+To configure the cache, you can pass a hash to the `LRUCache` constructor with the following options:
 
 ```
 var cache = new LRUCache({
