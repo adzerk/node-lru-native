@@ -55,6 +55,9 @@ private:
   static Handle<Value> Get(const Arguments &args);
   static Handle<Value> Set(const Arguments &args);
   static Handle<Value> Remove(const Arguments &args);
+  static Handle<Value> Clear(const Arguments &args);
+  static Handle<Value> Size(const Arguments &args);
+  static Handle<Value> Stats(const Arguments &args);
 
 };
 

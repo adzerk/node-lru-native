@@ -1,0 +1,12 @@
+{
+  "name": "node-lru-native",
+  "version": "0.1.0",
+  "description": "a native LRU cache implementation",
+  "devDependencies": {
+    "chai": "latest",
+    "mocha": "latest"
+  },
+  "scripts": {
+    "valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec --compilers coffee:coffee-script"
+  }
+}

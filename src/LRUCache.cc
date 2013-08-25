@@ -1,5 +1,6 @@
 #include "LRUCache.h"
 #include <time.h>
+#include <math.h>
 
 #ifndef __APPLE__
 #include <unordered_map>
@@ -15,11 +16,15 @@ void LRUCache::init(Handle<Object> exports)
   constructor->SetClassName(className);
 
   Handle<ObjectTemplate> instance = constructor->InstanceTemplate();
-  instance->SetInternalFieldCount(1);
+  instance->SetInternalFieldCount(6);
 
   Handle<ObjectTemplate> prototype = constructor->PrototypeTemplate();
   prototype->Set("get", FunctionTemplate::New(Get)->GetFunction());
   prototype->Set("set", FunctionTemplate::New(Set)->GetFunction());
+  prototype->Set("remove", FunctionTemplate::New(Remove)->GetFunction());
+  prototype->Set("clear", FunctionTemplate::New(Clear)->GetFunction());
+  prototype->Set("size", FunctionTemplate::New(Size)->GetFunction());
+  prototype->Set("stats", FunctionTemplate::New(Stats)->GetFunction());
 
   exports->Set(className, Persistent<Function>::New(constructor->GetFunction()));
 }
@@ -28,21 +33,25 @@ Handle<Value> LRUCache::New(const Arguments& args)
 {
   LRUCache* cache = new LRUCache();
 
-  if (args.Length() > 0)
+  if (args.Length() > 0 && args[0]->IsObject())
   {
     Local<Object> config = args[0]->ToObject();
 
-    if (config->Has(String::NewSymbol("maxElements")))
-    {
-      Local<Value> maxElements = config->Get(String::NewSymbol("maxElements"));
-      cache->maxElements = maxElements->ToInteger()->Value();
-    }
+    Local<Value> maxElements = config->Get(String::NewSymbol("maxElements"));
+    if (maxElements->IsUint32())
+      cache->maxElements = maxElements->Uint32Value();
 
-    if (config->Has(String::NewSymbol("maxAge")))
-    {
-      Local<Value> maxAge = config->Get(String::NewSymbol("maxAge"));
-      cache->maxAge = maxAge->ToInteger()->Value();
-    }
+    Local<Value> maxAge = config->Get(String::NewSymbol("maxAge"));
+    if (maxAge->IsUint32())
+      cache->maxAge = maxAge->Uint32Value();
+
+    Local<Value> maxLoadFactor = config->Get(String::NewSymbol("maxLoadFactor"));
+    if (maxLoadFactor->IsNumber())
+      cache->data.max_load_factor(maxLoadFactor->NumberValue());
+
+    Local<Value> size = config->Get(String::NewSymbol("size"));
+    if (size->IsUint32())
+      cache->data.rehash(ceil(size->Uint32Value() / cache->data.max_load_factor()));
   }
 
   cache->Wrap(args.This());
@@ -199,5 +208,40 @@ Handle<Value> LRUCache::Remove(const Arguments& args)
   return scope.Close(Handle<Value>());
 }
 
+Handle<Value> LRUCache::Clear(const Arguments& args)
+{
+  HandleScope scope;
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
+  for (HashMap::iterator itr = cache->data.begin(); itr != cache->data.end(); itr++)
+  {
+    Persistent<Value> value = itr->second.value;
+    value.Dispose();
+  }
 
+  cache->data.clear();
+  cache->lru.clear();
+
+  return scope.Close(Handle<Value>());
+}
+
+Handle<Value> LRUCache::Size(const Arguments& args)
+{
+  HandleScope scope;
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+  return scope.Close(Integer::New(cache->data.size()));
+}
+
+Handle<Value> LRUCache::Stats(const Arguments& args)
+{
+  HandleScope scope;
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+
+  Local<Object> stats = Object::New();
+  stats->Set(String::NewSymbol("size"), Integer::New(cache->data.size()));
+  stats->Set(String::NewSymbol("buckets"), Integer::New(cache->data.bucket_count()));
+  stats->Set(String::NewSymbol("loadFactor"), Number::New(cache->data.load_factor()));
+  stats->Set(String::NewSymbol("maxLoadFactor"), Number::New(cache->data.max_load_factor()));
+
+  return scope.Close(stats);
+}
