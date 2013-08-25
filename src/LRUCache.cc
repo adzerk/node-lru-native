@@ -8,6 +8,19 @@
 
 using namespace v8;
 
+unsigned long getCurrentTime()
+{
+  timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000 + tv.tv_usec;
+}
+
+std::string getStringValue(Handle<Value> value)
+{
+  String::Utf8Value keyUtf8Value(value);
+  return std::string(*keyUtf8Value);
+}
+
 void LRUCache::init(Handle<Object> exports)
 {
   Local<String> className = String::NewSymbol("LRUCache");
@@ -66,6 +79,11 @@ LRUCache::LRUCache()
 
 LRUCache::~LRUCache()
 {
+  this->disposeAllHandles();
+}
+
+void LRUCache::disposeAllHandles()
+{
   for (HashMap::iterator itr = this->data.begin(); itr != this->data.end(); itr++)
   {
     Persistent<Value> value = itr->second.value;
@@ -73,7 +91,7 @@ LRUCache::~LRUCache()
   }
 }
 
-void LRUCache::Evict()
+void LRUCache::evict()
 {
   const HashMap::iterator itr = this->data.find(this->lru.front());
 
@@ -91,18 +109,12 @@ Handle<Value> LRUCache::Get(const Arguments& args)
 {
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+  unsigned long now = getCurrentTime();
 
-  timeval tv;
-  gettimeofday(&tv, NULL);
-  unsigned long now = tv.tv_sec * 1000 + tv.tv_usec;
+  if (args.Length() != 1)
+    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for get(), expected 1")));
 
-  if (args.Length() < 1)
-    return ThrowException(Exception::RangeError(String::New("Missing argument to get()")));
-
-  Local<Value> keyRef = Local<Value>(args[0]);
-  String::Utf8Value keyUtf8Value(keyRef);
-  std::string key = std::string(*keyUtf8Value);
-
+  std::string key = getStringValue(args[0]);
   const HashMap::const_iterator itr = cache->data.find(key);
 
   // If the specified entry doesn't exist, return undefined.
@@ -135,26 +147,20 @@ Handle<Value> LRUCache::Set(const Arguments& args)
 {
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+  unsigned long now = getCurrentTime();
 
-  timeval tv;
-  gettimeofday(&tv, NULL);
-  unsigned long now = tv.tv_sec * 1000 + tv.tv_usec;
+  if (args.Length() != 2)
+    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for set(), expected 2")));
 
-  if (args.Length() < 2)
-    return ThrowException(Exception::RangeError(String::New("Missing argument to set()")));
-
-  Local<Value> value = Local<Value>(args[1]);
-  Local<Value> keyRef = Local<Value>(args[0]);
-  String::Utf8Value keyUtf8Value(keyRef);
-  std::string key = std::string(*keyUtf8Value);
-
+  std::string key = getStringValue(args[0]);
+  Local<Value> value = args[1];
   const HashMap::iterator itr = cache->data.find(key);
 
   if (itr == cache->data.end())
   {
     // We're adding a new item. First ensure we have space.
     if (cache->maxElements > 0 && cache->data.size() == cache->maxElements)
-      cache->Evict();
+      cache->evict();
 
     // Add the value to the end of the LRU list.
     KeyList::iterator pointer = cache->lru.insert(cache->lru.end(), key);
@@ -187,22 +193,19 @@ Handle<Value> LRUCache::Remove(const Arguments& args)
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
-  if (args.Length() < 1)
-    return ThrowException(Exception::RangeError(String::New("Missing argument to remove()")));
+  if (args.Length() != 1)
+    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for remove(), expected 1")));
 
-  Local<Value> keyRef = Local<Value>(args[0]);
-  String::Utf8Value keyUtf8Value(keyRef);
-  std::string key = std::string(*keyUtf8Value);
-
+  std::string key = getStringValue(args[0]);
   const HashMap::iterator itr = cache->data.find(key);
 
   if (itr != cache->data.end())
   {
-    cache->data.erase(itr);
-    cache->lru.remove(key);
-
     HashEntry entry = itr->second;
     entry.value.Dispose();
+
+    cache->data.erase(itr);
+    cache->lru.remove(key);
   }
 
   return scope.Close(Handle<Value>());
@@ -213,12 +216,7 @@ Handle<Value> LRUCache::Clear(const Arguments& args)
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
-  for (HashMap::iterator itr = cache->data.begin(); itr != cache->data.end(); itr++)
-  {
-    Persistent<Value> value = itr->second.value;
-    value.Dispose();
-  }
-
+  cache->disposeAllHandles();
   cache->data.clear();
   cache->lru.clear();
 

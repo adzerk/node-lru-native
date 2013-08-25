@@ -25,7 +25,9 @@ public:
 private:
   LRUCache();
   ~LRUCache();
-  void Evict();
+
+  void disposeAllHandles();
+  void evict();
 
   typedef std::list< std::string > KeyList;
 
