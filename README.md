@@ -33,6 +33,14 @@ cache.set('some-key', 42);
 var value = cache.get('some-key');
 ```
 
+If you'd like to tinker, you can build the extension using [node-gyp](https://github.com/TooTallNate/node-gyp):
+
+```
+$ npm install -g node-gyp
+$ node-gyp configure
+$ node-gyp build
+```
+
 # Configuration
 
 To configure the cache, you can pass a hash to the `LRUCache` constructor with the following options:
