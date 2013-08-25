@@ -42,17 +42,17 @@ var cache = new LRUCache({
 
   // The maximum number of items to add to the cache before evicting the least-recently-used item.
   // Default: 0, meaning there is no maximum.
-	maxElements: 10000,
+  maxElements: 10000,
 
-	// The maximum age (in milliseconds) of an item. The item will be removed if get() is called and the item is too old.
-	// Default: 0, meaning items will never expire.
-	maxAge: 60000,
+  // The maximum age (in milliseconds) of an item. The item will be removed if get() is called and the item is too old.
+  // Default: 0, meaning items will never expire.
+  maxAge: 60000,
 
-	// The initial number of items for which space should be allocated. The cache will resize dynamically if necessary.
-	size: 1000,
+  // The initial number of items for which space should be allocated. The cache will resize dynamically if necessary.
+  size: 1000,
 
-	// The maximum load factor for buckets in the unordered_map. Typically you won't need to change this.
-	maxLoadFactor: 2.0
+  // The maximum load factor for buckets in the unordered_map. Typically you won't need to change this.
+  maxLoadFactor: 2.0
 
 });
 ```
