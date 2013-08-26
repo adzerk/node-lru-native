@@ -125,10 +125,12 @@ Handle<Value> LRUCache::Get(const Arguments& args)
 
   if (cache->maxAge > 0 && now - entry.timestamp > cache->maxAge)
   {
-    // The entry has passed the maximum age, so remove it.
-    cache->data.erase(itr);
-    cache->lru.remove(key);
+    // The entry has passed the maximum age, so we need to remove it. Dispose the handle first.
     entry.value.Dispose();
+
+    // Remove the entry from the hash and from the LRU list.
+    cache->data.erase(itr);
+    cache->lru.erase(entry.pointer);
 
     // Return undefined.
     return scope.Close(Handle<Value>());
