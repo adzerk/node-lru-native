@@ -109,7 +109,6 @@ Handle<Value> LRUCache::Get(const Arguments& args)
 {
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
-  unsigned long now = getCurrentTime();
 
   if (args.Length() != 1)
     return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for get(), expected 1")));
@@ -123,7 +122,7 @@ Handle<Value> LRUCache::Get(const Arguments& args)
 
   HashEntry entry = itr->second;
 
-  if (cache->maxAge > 0 && now - entry.timestamp > cache->maxAge)
+  if (cache->maxAge > 0 && getCurrentTime() - entry.timestamp > cache->maxAge)
   {
     // The entry has passed the maximum age, so we need to remove it. Dispose the handle first.
     entry.value.Dispose();
@@ -149,7 +148,7 @@ Handle<Value> LRUCache::Set(const Arguments& args)
 {
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
-  unsigned long now = getCurrentTime();
+  unsigned long now = cache->maxAge == 0 ? 0 : getCurrentTime();
 
   if (args.Length() != 2)
     return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for set(), expected 2")));
