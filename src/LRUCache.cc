@@ -1,5 +1,5 @@
 #include "LRUCache.h"
-#include <time.h>
+#include <sys/time.h>
 #include <math.h>
 
 #ifndef __APPLE__
