@@ -93,3 +93,9 @@ Returns the number of items in the cache.
 ## stats()
 
 Returns a hash containing internal information about the cache.
+
+# Changelog
+
+- 0.3.0 -- Changed memory allocation strategy, fixed issue where remove() would do a seek through the LRU list, code cleanup
+- 0.2.0 -- Fixed issue where maxAge-based removal would result in a seek through the LRU list
+- 0.1.0 -- Initial release

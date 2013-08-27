@@ -26,9 +26,6 @@ private:
   LRUCache();
   ~LRUCache();
 
-  void disposeAllHandles();
-  void evict();
-
   typedef std::list< std::string > KeyList;
 
   struct HashEntry
@@ -45,13 +42,17 @@ private:
     }
   };
 
-  typedef unordered_map< std::string, HashEntry > HashMap;
+  typedef unordered_map< std::string, HashEntry* > HashMap;
 
   HashMap data;
   KeyList lru;
 
   size_t maxElements;
   unsigned long maxAge;
+
+  void disposeAll();
+  void evict();
+  void remove(HashMap::const_iterator itr);
 
   static Handle<Value> New(const Arguments &args);
   static Handle<Value> Get(const Arguments &args);

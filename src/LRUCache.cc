@@ -79,15 +79,16 @@ LRUCache::LRUCache()
 
 LRUCache::~LRUCache()
 {
-  this->disposeAllHandles();
+  this->disposeAll();
 }
 
-void LRUCache::disposeAllHandles()
+void LRUCache::disposeAll()
 {
   for (HashMap::iterator itr = this->data.begin(); itr != this->data.end(); itr++)
   {
-    Persistent<Value> value = itr->second.value;
-    value.Dispose();
+    HashEntry* entry = itr->second;
+    entry->value.Dispose();
+    delete entry;
   }
 }
 
@@ -98,11 +99,32 @@ void LRUCache::evict()
   if (itr == this->data.end())
     return;
 
-  Persistent<Value> value = itr->second.value;
-  value.Dispose();
+  HashEntry* entry = itr->second;
 
+  // Dispose the V8 handle contained in the entry.
+  entry->value.Dispose();
+
+  // Remove the entry from the hash and from the LRU list.
   this->data.erase(itr);
   this->lru.pop_front();
+
+  // Free the entry itself.
+  delete entry;
+}
+
+void LRUCache::remove(const HashMap::const_iterator itr)
+{
+  HashEntry* entry = itr->second;
+
+  // Dispose the V8 handle contained in the entry.
+  entry->value.Dispose();
+
+  // Remove the entry from the hash and from the LRU list.
+  this->data.erase(itr);
+  this->lru.erase(entry->pointer);
+
+  // Free the entry itself.
+  delete entry;
 }
 
 Handle<Value> LRUCache::Get(const Arguments& args)
@@ -120,16 +142,12 @@ Handle<Value> LRUCache::Get(const Arguments& args)
   if (itr == cache->data.end())
     return scope.Close(Handle<Value>());
 
-  HashEntry entry = itr->second;
+  HashEntry* entry = itr->second;
 
-  if (cache->maxAge > 0 && getCurrentTime() - entry.timestamp > cache->maxAge)
+  if (cache->maxAge > 0 && getCurrentTime() - entry->timestamp > cache->maxAge)
   {
-    // The entry has passed the maximum age, so we need to remove it. Dispose the handle first.
-    entry.value.Dispose();
-
-    // Remove the entry from the hash and from the LRU list.
-    cache->data.erase(itr);
-    cache->lru.erase(entry.pointer);
+    // The entry has passed the maximum age, so we need to remove it.
+    cache->remove(itr);
 
     // Return undefined.
     return scope.Close(Handle<Value>());
@@ -137,10 +155,10 @@ Handle<Value> LRUCache::Get(const Arguments& args)
   else
   {
     // Move the value to the end of the LRU list.
-    cache->lru.splice(cache->lru.end(), cache->lru, entry.pointer);
+    cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
 
     // Return the value.
-    return scope.Close(entry.value);
+    return scope.Close(entry->value);
   }
 }
 
@@ -167,22 +185,22 @@ Handle<Value> LRUCache::Set(const Arguments& args)
     KeyList::iterator pointer = cache->lru.insert(cache->lru.end(), key);
 
     // Add the entry to the key-value map.
-    HashEntry entry = HashEntry(Persistent<Value>::New(value), pointer, now);
+    HashEntry* entry = new HashEntry(Persistent<Value>::New(value), pointer, now);
     cache->data.insert(std::make_pair(key, entry));
   }
   else
   {
-    HashEntry entry = itr->second;
+    HashEntry* entry = itr->second;
 
-    // We're replacing an existing value, so dispose of the old reference to ensure it gets GC'd.
-    entry.value.Dispose();
+    // We're replacing an existing value, so dispose the old V8 handle to ensure it gets GC'd.
+    entry->value.Dispose();
 
     // Replace the value in the key-value map with the new one, and update the timestamp.
-    entry.value = Persistent<Value>::New(value);
-    entry.timestamp = now;
+    entry->value = Persistent<Value>::New(value);
+    entry->timestamp = now;
 
     // Move the value to the end of the LRU list.
-    cache->lru.splice(cache->lru.end(), cache->lru, entry.pointer);
+    cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
   }
 
   // Return undefined.
@@ -201,13 +219,7 @@ Handle<Value> LRUCache::Remove(const Arguments& args)
   const HashMap::iterator itr = cache->data.find(key);
 
   if (itr != cache->data.end())
-  {
-    HashEntry entry = itr->second;
-    entry.value.Dispose();
-
-    cache->data.erase(itr);
-    cache->lru.remove(key);
-  }
+    cache->remove(itr);
 
   return scope.Close(Handle<Value>());
 }
@@ -217,7 +229,7 @@ Handle<Value> LRUCache::Clear(const Arguments& args)
   HandleScope scope;
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
-  cache->disposeAllHandles();
+  cache->disposeAll();
   cache->data.clear();
   cache->lru.clear();
 
