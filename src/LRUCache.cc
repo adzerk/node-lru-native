@@ -23,54 +23,53 @@ std::string getStringValue(Handle<Value> value)
 
 void LRUCache::init(Handle<Object> exports)
 {
-  Isolate* isolate = Isolate::GetCurrent();
-  Local<String> className = String::NewFromUtf8(isolate, "LRUCache", String::kInternalizedString);
+  Local<String> className = NanNew("LRUCache");
 
-  Local<FunctionTemplate> constructor = FunctionTemplate::New(isolate, New);
+  Local<FunctionTemplate> constructor = NanNew<FunctionTemplate>(New);
   constructor->SetClassName(className);
 
   Handle<ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(6);
 
   Handle<ObjectTemplate> prototype = constructor->PrototypeTemplate();
-  prototype->Set(String::NewFromUtf8(isolate, "get"), FunctionTemplate::New(isolate, Get)->GetFunction());
-  prototype->Set(String::NewFromUtf8(isolate, "set"), FunctionTemplate::New(isolate, Set)->GetFunction());
-  prototype->Set(String::NewFromUtf8(isolate, "remove"), FunctionTemplate::New(isolate, Remove)->GetFunction());
-  prototype->Set(String::NewFromUtf8(isolate, "clear"), FunctionTemplate::New(isolate, Clear)->GetFunction());
-  prototype->Set(String::NewFromUtf8(isolate, "size"), FunctionTemplate::New(isolate, Size)->GetFunction());
-  prototype->Set(String::NewFromUtf8(isolate, "stats"), FunctionTemplate::New(isolate, Stats)->GetFunction());
+  prototype->Set(NanNew("get"), NanNew<FunctionTemplate>(Get)->GetFunction());
+  prototype->Set(NanNew("set"), NanNew<FunctionTemplate>(Set)->GetFunction());
+  prototype->Set(NanNew("remove"), NanNew<FunctionTemplate>(Remove)->GetFunction());
+  prototype->Set(NanNew("clear"), NanNew<FunctionTemplate>(Clear)->GetFunction());
+  prototype->Set(NanNew("size"), NanNew<FunctionTemplate>(Size)->GetFunction());
+  prototype->Set(NanNew("stats"), NanNew<FunctionTemplate>(Stats)->GetFunction());
   
   exports->Set(className, constructor->GetFunction());
 }
 
-void LRUCache::New(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::New)
 {
-  Isolate* isolate = Isolate::GetCurrent();
   LRUCache* cache = new LRUCache();
 
   if (args.Length() > 0 && args[0]->IsObject())
   {
     Local<Object> config = args[0]->ToObject();
 
-    Local<Value> maxElements = config->Get(String::NewFromUtf8(isolate, "maxElements", String::kInternalizedString));
+    Local<Value> maxElements = config->Get(NanNew("maxElements"));
     if (maxElements->IsUint32())
       cache->maxElements = maxElements->Uint32Value();
 
-    Local<Value> maxAge = config->Get(String::NewFromUtf8(isolate, "maxAge", String::kInternalizedString));
+    Local<Value> maxAge = config->Get(NanNew("maxAge"));
     if (maxAge->IsUint32())
       cache->maxAge = maxAge->Uint32Value();
 
-    Local<Value> maxLoadFactor = config->Get(String::NewFromUtf8(isolate, "maxLoadFactor", String::kInternalizedString));
+    Local<Value> maxLoadFactor = config->Get(NanNew("maxLoadFactor"));
     if (maxLoadFactor->IsNumber())
       cache->data.max_load_factor(maxLoadFactor->NumberValue());
 
-    Local<Value> size = config->Get(String::NewFromUtf8(isolate, "size", String::kInternalizedString));
+    Local<Value> size = config->Get(NanNew("size"));
     if (size->IsUint32())
       cache->data.rehash(ceil(size->Uint32Value() / cache->data.max_load_factor()));
   }
 
   cache->Wrap(args.This());
-  args.GetReturnValue().Set(args.This());
+
+  NanReturnValue(args.This());
 }
 
 LRUCache::LRUCache()
@@ -89,7 +88,7 @@ void LRUCache::disposeAll()
   for (HashMap::iterator itr = this->data.begin(); itr != this->data.end(); itr++)
   {
     HashEntry* entry = itr->second;
-    entry->value.Reset();
+    NanDisposePersistent(entry->value);
     delete entry;
   }
 }
@@ -104,7 +103,7 @@ void LRUCache::evict()
   HashEntry* entry = itr->second;
 
   // Dispose the V8 handle contained in the entry.
-  entry->value.Reset();
+  NanDisposePersistent(entry->value);
 
   // Remove the entry from the hash and from the LRU list.
   this->data.erase(itr);
@@ -119,7 +118,7 @@ void LRUCache::remove(const HashMap::const_iterator itr)
   HashEntry* entry = itr->second;
 
   // Dispose the V8 handle contained in the entry.
-  entry->value.Reset();
+  NanDisposePersistent(entry->value);
 
   // Remove the entry from the hash and from the LRU list.
   this->data.erase(itr);
@@ -129,21 +128,20 @@ void LRUCache::remove(const HashMap::const_iterator itr)
   delete entry;
 }
 
-void LRUCache::Get(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::Get)
 {
-  Isolate* isolate = Isolate::GetCurrent();
-  EscapableHandleScope scope(isolate);
+  NanScope();
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
   if (args.Length() != 1)
-    isolate->ThrowException(Exception::RangeError(String::NewFromUtf8(isolate, "Incorrect number of arguments for get(), expected 1")));
+    return NanThrowRangeError("Incorrect number of arguments for get(), expected 1");
 
   std::string key = getStringValue(args[0]);
   const HashMap::const_iterator itr = cache->data.find(key);
 
   // If the specified entry doesn't exist, return undefined.
   if (itr == cache->data.end())
-    args.GetReturnValue().Set(scope.Escape(Local<Value>()));
+    NanReturnUndefined();
 
   HashEntry* entry = itr->second;
 
@@ -153,7 +151,7 @@ void LRUCache::Get(const FunctionCallbackInfo<Value>& args)
     cache->remove(itr);
 
     // Return undefined.
-    args.GetReturnValue().Set(scope.Escape(Local<Value>()));
+    NanReturnUndefined();
   }
   else
   {
@@ -161,19 +159,19 @@ void LRUCache::Get(const FunctionCallbackInfo<Value>& args)
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
 
     // Return the value.
-    args.GetReturnValue().Set(scope.Escape(Local<Value>::New(isolate, entry->value)));
+    NanReturnValue(entry->value);
+    //args.GetReturnValue().Set(scope.Escape(Local<Value>::New(isolate, entry->value)));
   }
 }
 
-void LRUCache::Set(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::Set)
 {
-  Isolate* isolate = Isolate::GetCurrent();;
-  EscapableHandleScope scope(isolate);
+  NanScope();
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
   unsigned long now = cache->maxAge == 0 ? 0 : getCurrentTime();
 
   if (args.Length() != 2)
-    isolate->ThrowException(Exception::RangeError(String::NewFromUtf8(isolate, "Incorrect number of arguments for set(), expected 2")));
+    return NanThrowRangeError("Incorrect number of arguments for set(), expected 2");
 
   std::string key = getStringValue(args[0]);
   Local<Value> value = args[1];
@@ -197,10 +195,10 @@ void LRUCache::Set(const FunctionCallbackInfo<Value>& args)
     HashEntry* entry = itr->second;
 
     // We're replacing an existing value, so dispose the old V8 handle to ensure it gets GC'd.
-    entry->value.Reset();
+    NanDisposePersistent(entry->value);
 
     // Replace the value in the key-value map with the new one, and update the timestamp.
-    entry->value.Reset(isolate, value);
+    NanAssignPersistent(entry->value, value);
     entry->timestamp = now;
 
     // Move the value to the end of the LRU list.
@@ -208,59 +206,57 @@ void LRUCache::Set(const FunctionCallbackInfo<Value>& args)
   }
 
   // Return undefined.
-  args.GetReturnValue().Set(scope.Escape(Local<Value>()));
+  NanReturnUndefined();
 }
 
-void LRUCache::Remove(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::Remove)
 {
-  Isolate* isolate = Isolate::GetCurrent();
-  EscapableHandleScope scope(isolate);
+  NanScope();
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
   if (args.Length() != 1)
-    isolate->ThrowException(Exception::RangeError(String::NewFromUtf8(isolate, "Incorrect number of arguments for remove(), expected 1")));
+    NanThrowRangeError("Incorrect number of arguments for remove(), expected 1");
 
   std::string key = getStringValue(args[0]);
   const HashMap::iterator itr = cache->data.find(key);
 
   if (itr != cache->data.end())
     cache->remove(itr);
-
-  args.GetReturnValue().Set(scope.Escape(Local<Value>()));
+  
+  // Return undefined.
+  NanReturnUndefined();
 }
 
-void LRUCache::Clear(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::Clear)
 {
-  Isolate* isolate = Isolate::GetCurrent();
-  EscapableHandleScope scope(isolate);
+  NanScope();
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
   cache->disposeAll();
   cache->data.clear();
   cache->lru.clear();
 
-  args.GetReturnValue().Set(scope.Escape(Local<Value>()));
+  // Return undefined.
+  NanReturnUndefined();
 }
 
-void LRUCache::Size(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::Size)
 {
-  Isolate* isolate = Isolate::GetCurrent();
-  EscapableHandleScope scope(isolate);
+  NanScope();
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
-  args.GetReturnValue().Set(scope.Escape(Integer::New(isolate, cache->data.size())));
+  NanReturnValue(NanNew<Integer>(static_cast<uint32_t>(cache->data.size())));
 }
 
-void LRUCache::Stats(const FunctionCallbackInfo<Value>& args)
+NAN_METHOD(LRUCache::Stats)
 {
-  Isolate* isolate = Isolate::GetCurrent();
-  EscapableHandleScope scope(isolate);
+  NanScope();
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
-  Local<Object> stats = Object::New(isolate);
-  stats->Set(String::NewFromUtf8(isolate, "size", String::kInternalizedString), Integer::New(isolate, cache->data.size()));
-  stats->Set(String::NewFromUtf8(isolate, "buckets", String::kInternalizedString), Integer::New(isolate, cache->data.bucket_count()));
-  stats->Set(String::NewFromUtf8(isolate, "loadFactor", String::kInternalizedString), Number::New(isolate, cache->data.load_factor()));
-  stats->Set(String::NewFromUtf8(isolate, "maxLoadFactor", String::kInternalizedString), Number::New(isolate, cache->data.max_load_factor()));
+  Local<Object> stats = NanNew<Object>();
+  stats->Set(NanNew("size"), NanNew<Integer>(static_cast<uint32_t>(cache->data.size())));
+  stats->Set(NanNew("buckets"), NanNew<Integer>(static_cast<uint32_t>(cache->data.bucket_count())));
+  stats->Set(NanNew("loadFactor"), NanNew<Integer>(static_cast<uint32_t>(cache->data.load_factor())));
+  stats->Set(NanNew("maxLoadFactor"), NanNew<Integer>(static_cast<uint32_t>(cache->data.max_load_factor())));
 
-  args.GetReturnValue().Set(scope.Escape(stats));
+  NanReturnValue(stats);
 }

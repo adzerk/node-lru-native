@@ -4,6 +4,7 @@
 #include <time.h>
 #include <node.h>
 #include <node_object_wrap.h>
+#include <nan.h>
 #include <string>
 #include <list>
 
@@ -36,8 +37,7 @@ private:
 
     HashEntry(Local<Value> value, KeyList::iterator pointer, unsigned long timestamp)
     {
-      Isolate* isolate = Isolate::GetCurrent();
-      this->value.Reset(isolate, value);
+      NanAssignPersistent(this->value, value);
       this->pointer = pointer;
       this->timestamp = timestamp;
     }
@@ -55,13 +55,13 @@ private:
   void evict();
   void remove(HashMap::const_iterator itr);
 
-  static void New(const FunctionCallbackInfo<Value> &args);
-  static void Get(const FunctionCallbackInfo<Value> &args);
-  static void Set(const FunctionCallbackInfo<Value> &args);
-  static void Remove(const FunctionCallbackInfo<Value> &args);
-  static void Clear(const FunctionCallbackInfo<Value> &args);
-  static void Size(const FunctionCallbackInfo<Value> &args);
-  static void Stats(const FunctionCallbackInfo<Value> &args);
+  static NAN_METHOD(New);
+  static NAN_METHOD(Get);
+  static NAN_METHOD(Set);
+  static NAN_METHOD(Remove);
+  static NAN_METHOD(Clear);
+  static NAN_METHOD(Size);
+  static NAN_METHOD(Stats);
 };
 
 #endif //LRUCACHE_H

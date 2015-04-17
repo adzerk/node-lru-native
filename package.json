@@ -8,5 +8,8 @@
   },
   "scripts": {
     "valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec --compilers coffee:coffee-script"
+  },
+  "dependencies": {
+    "nan": "^1.7.0"
   }
 }
