@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <node.h>
+#include <node_object_wrap.h>
 #include <string>
 #include <list>
 
@@ -16,8 +17,7 @@
 
 using namespace v8;
 
-class LRUCache : public node::ObjectWrap
-{
+class LRUCache : public node::ObjectWrap {
 
 public:
   static void init(Handle<Object> exports);
@@ -34,9 +34,10 @@ private:
     KeyList::iterator pointer;
     unsigned long timestamp;
 
-    HashEntry(Persistent<Value> value, KeyList::iterator pointer, unsigned long timestamp)
+    HashEntry(Local<Value> value, KeyList::iterator pointer, unsigned long timestamp)
     {
-      this->value = value;
+      Isolate* isolate = Isolate::GetCurrent();
+      this->value.Reset(isolate, value);
       this->pointer = pointer;
       this->timestamp = timestamp;
     }
@@ -54,14 +55,13 @@ private:
   void evict();
   void remove(HashMap::const_iterator itr);
 
-  static Handle<Value> New(const Arguments &args);
-  static Handle<Value> Get(const Arguments &args);
-  static Handle<Value> Set(const Arguments &args);
-  static Handle<Value> Remove(const Arguments &args);
-  static Handle<Value> Clear(const Arguments &args);
-  static Handle<Value> Size(const Arguments &args);
-  static Handle<Value> Stats(const Arguments &args);
-
+  static void New(const FunctionCallbackInfo<Value> &args);
+  static void Get(const FunctionCallbackInfo<Value> &args);
+  static void Set(const FunctionCallbackInfo<Value> &args);
+  static void Remove(const FunctionCallbackInfo<Value> &args);
+  static void Clear(const FunctionCallbackInfo<Value> &args);
+  static void Size(const FunctionCallbackInfo<Value> &args);
+  static void Stats(const FunctionCallbackInfo<Value> &args);
 };
 
 #endif //LRUCACHE_H

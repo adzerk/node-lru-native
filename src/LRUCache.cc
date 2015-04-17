@@ -23,52 +23,54 @@ std::string getStringValue(Handle<Value> value)
 
 void LRUCache::init(Handle<Object> exports)
 {
-  Local<String> className = String::NewSymbol("LRUCache");
+  Isolate* isolate = Isolate::GetCurrent();
+  Local<String> className = String::NewFromUtf8(isolate, "LRUCache", String::kInternalizedString);
 
-  Local<FunctionTemplate> constructor = FunctionTemplate::New(New);
+  Local<FunctionTemplate> constructor = FunctionTemplate::New(isolate, New);
   constructor->SetClassName(className);
 
   Handle<ObjectTemplate> instance = constructor->InstanceTemplate();
   instance->SetInternalFieldCount(6);
 
   Handle<ObjectTemplate> prototype = constructor->PrototypeTemplate();
-  prototype->Set("get", FunctionTemplate::New(Get)->GetFunction());
-  prototype->Set("set", FunctionTemplate::New(Set)->GetFunction());
-  prototype->Set("remove", FunctionTemplate::New(Remove)->GetFunction());
-  prototype->Set("clear", FunctionTemplate::New(Clear)->GetFunction());
-  prototype->Set("size", FunctionTemplate::New(Size)->GetFunction());
-  prototype->Set("stats", FunctionTemplate::New(Stats)->GetFunction());
-
-  exports->Set(className, Persistent<Function>::New(constructor->GetFunction()));
+  prototype->Set(String::NewFromUtf8(isolate, "get"), FunctionTemplate::New(isolate, Get)->GetFunction());
+  prototype->Set(String::NewFromUtf8(isolate, "set"), FunctionTemplate::New(isolate, Set)->GetFunction());
+  prototype->Set(String::NewFromUtf8(isolate, "remove"), FunctionTemplate::New(isolate, Remove)->GetFunction());
+  prototype->Set(String::NewFromUtf8(isolate, "clear"), FunctionTemplate::New(isolate, Clear)->GetFunction());
+  prototype->Set(String::NewFromUtf8(isolate, "size"), FunctionTemplate::New(isolate, Size)->GetFunction());
+  prototype->Set(String::NewFromUtf8(isolate, "stats"), FunctionTemplate::New(isolate, Stats)->GetFunction());
+  
+  exports->Set(className, constructor->GetFunction());
 }
 
-Handle<Value> LRUCache::New(const Arguments& args)
+void LRUCache::New(const FunctionCallbackInfo<Value>& args)
 {
+  Isolate* isolate = Isolate::GetCurrent();
   LRUCache* cache = new LRUCache();
 
   if (args.Length() > 0 && args[0]->IsObject())
   {
     Local<Object> config = args[0]->ToObject();
 
-    Local<Value> maxElements = config->Get(String::NewSymbol("maxElements"));
+    Local<Value> maxElements = config->Get(String::NewFromUtf8(isolate, "maxElements", String::kInternalizedString));
     if (maxElements->IsUint32())
       cache->maxElements = maxElements->Uint32Value();
 
-    Local<Value> maxAge = config->Get(String::NewSymbol("maxAge"));
+    Local<Value> maxAge = config->Get(String::NewFromUtf8(isolate, "maxAge", String::kInternalizedString));
     if (maxAge->IsUint32())
       cache->maxAge = maxAge->Uint32Value();
 
-    Local<Value> maxLoadFactor = config->Get(String::NewSymbol("maxLoadFactor"));
+    Local<Value> maxLoadFactor = config->Get(String::NewFromUtf8(isolate, "maxLoadFactor", String::kInternalizedString));
     if (maxLoadFactor->IsNumber())
       cache->data.max_load_factor(maxLoadFactor->NumberValue());
 
-    Local<Value> size = config->Get(String::NewSymbol("size"));
+    Local<Value> size = config->Get(String::NewFromUtf8(isolate, "size", String::kInternalizedString));
     if (size->IsUint32())
       cache->data.rehash(ceil(size->Uint32Value() / cache->data.max_load_factor()));
   }
 
   cache->Wrap(args.This());
-  return args.This();
+  args.GetReturnValue().Set(args.This());
 }
 
 LRUCache::LRUCache()
@@ -87,7 +89,7 @@ void LRUCache::disposeAll()
   for (HashMap::iterator itr = this->data.begin(); itr != this->data.end(); itr++)
   {
     HashEntry* entry = itr->second;
-    entry->value.Dispose();
+    entry->value.Reset();
     delete entry;
   }
 }
@@ -102,7 +104,7 @@ void LRUCache::evict()
   HashEntry* entry = itr->second;
 
   // Dispose the V8 handle contained in the entry.
-  entry->value.Dispose();
+  entry->value.Reset();
 
   // Remove the entry from the hash and from the LRU list.
   this->data.erase(itr);
@@ -117,7 +119,7 @@ void LRUCache::remove(const HashMap::const_iterator itr)
   HashEntry* entry = itr->second;
 
   // Dispose the V8 handle contained in the entry.
-  entry->value.Dispose();
+  entry->value.Reset();
 
   // Remove the entry from the hash and from the LRU list.
   this->data.erase(itr);
@@ -127,20 +129,21 @@ void LRUCache::remove(const HashMap::const_iterator itr)
   delete entry;
 }
 
-Handle<Value> LRUCache::Get(const Arguments& args)
+void LRUCache::Get(const FunctionCallbackInfo<Value>& args)
 {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();
+  EscapableHandleScope scope(isolate);
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
   if (args.Length() != 1)
-    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for get(), expected 1")));
+    isolate->ThrowException(Exception::RangeError(String::NewFromUtf8(isolate, "Incorrect number of arguments for get(), expected 1")));
 
   std::string key = getStringValue(args[0]);
   const HashMap::const_iterator itr = cache->data.find(key);
 
   // If the specified entry doesn't exist, return undefined.
   if (itr == cache->data.end())
-    return scope.Close(Handle<Value>());
+    args.GetReturnValue().Set(scope.Escape(Local<Value>()));
 
   HashEntry* entry = itr->second;
 
@@ -150,7 +153,7 @@ Handle<Value> LRUCache::Get(const Arguments& args)
     cache->remove(itr);
 
     // Return undefined.
-    return scope.Close(Handle<Value>());
+    args.GetReturnValue().Set(scope.Escape(Local<Value>()));
   }
   else
   {
@@ -158,18 +161,19 @@ Handle<Value> LRUCache::Get(const Arguments& args)
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
 
     // Return the value.
-    return scope.Close(entry->value);
+    args.GetReturnValue().Set(scope.Escape(Local<Value>::New(isolate, entry->value)));
   }
 }
 
-Handle<Value> LRUCache::Set(const Arguments& args)
+void LRUCache::Set(const FunctionCallbackInfo<Value>& args)
 {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();;
+  EscapableHandleScope scope(isolate);
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
   unsigned long now = cache->maxAge == 0 ? 0 : getCurrentTime();
 
   if (args.Length() != 2)
-    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for set(), expected 2")));
+    isolate->ThrowException(Exception::RangeError(String::NewFromUtf8(isolate, "Incorrect number of arguments for set(), expected 2")));
 
   std::string key = getStringValue(args[0]);
   Local<Value> value = args[1];
@@ -185,7 +189,7 @@ Handle<Value> LRUCache::Set(const Arguments& args)
     KeyList::iterator pointer = cache->lru.insert(cache->lru.end(), key);
 
     // Add the entry to the key-value map.
-    HashEntry* entry = new HashEntry(Persistent<Value>::New(value), pointer, now);
+    HashEntry* entry = new HashEntry(value, pointer, now);
     cache->data.insert(std::make_pair(key, entry));
   }
   else
@@ -193,10 +197,10 @@ Handle<Value> LRUCache::Set(const Arguments& args)
     HashEntry* entry = itr->second;
 
     // We're replacing an existing value, so dispose the old V8 handle to ensure it gets GC'd.
-    entry->value.Dispose();
+    entry->value.Reset();
 
     // Replace the value in the key-value map with the new one, and update the timestamp.
-    entry->value = Persistent<Value>::New(value);
+    entry->value.Reset(isolate, value);
     entry->timestamp = now;
 
     // Move the value to the end of the LRU list.
@@ -204,16 +208,17 @@ Handle<Value> LRUCache::Set(const Arguments& args)
   }
 
   // Return undefined.
-  return scope.Close(Handle<Value>());
+  args.GetReturnValue().Set(scope.Escape(Local<Value>()));
 }
 
-Handle<Value> LRUCache::Remove(const Arguments& args)
+void LRUCache::Remove(const FunctionCallbackInfo<Value>& args)
 {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();
+  EscapableHandleScope scope(isolate);
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
   if (args.Length() != 1)
-    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for remove(), expected 1")));
+    isolate->ThrowException(Exception::RangeError(String::NewFromUtf8(isolate, "Incorrect number of arguments for remove(), expected 1")));
 
   std::string key = getStringValue(args[0]);
   const HashMap::iterator itr = cache->data.find(key);
@@ -221,38 +226,41 @@ Handle<Value> LRUCache::Remove(const Arguments& args)
   if (itr != cache->data.end())
     cache->remove(itr);
 
-  return scope.Close(Handle<Value>());
+  args.GetReturnValue().Set(scope.Escape(Local<Value>()));
 }
 
-Handle<Value> LRUCache::Clear(const Arguments& args)
+void LRUCache::Clear(const FunctionCallbackInfo<Value>& args)
 {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();
+  EscapableHandleScope scope(isolate);
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
   cache->disposeAll();
   cache->data.clear();
   cache->lru.clear();
 
-  return scope.Close(Handle<Value>());
+  args.GetReturnValue().Set(scope.Escape(Local<Value>()));
 }
 
-Handle<Value> LRUCache::Size(const Arguments& args)
+void LRUCache::Size(const FunctionCallbackInfo<Value>& args)
 {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();
+  EscapableHandleScope scope(isolate);
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
-  return scope.Close(Integer::New(cache->data.size()));
+  args.GetReturnValue().Set(scope.Escape(Integer::New(isolate, cache->data.size())));
 }
 
-Handle<Value> LRUCache::Stats(const Arguments& args)
+void LRUCache::Stats(const FunctionCallbackInfo<Value>& args)
 {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();
+  EscapableHandleScope scope(isolate);
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
 
-  Local<Object> stats = Object::New();
-  stats->Set(String::NewSymbol("size"), Integer::New(cache->data.size()));
-  stats->Set(String::NewSymbol("buckets"), Integer::New(cache->data.bucket_count()));
-  stats->Set(String::NewSymbol("loadFactor"), Number::New(cache->data.load_factor()));
-  stats->Set(String::NewSymbol("maxLoadFactor"), Number::New(cache->data.max_load_factor()));
+  Local<Object> stats = Object::New(isolate);
+  stats->Set(String::NewFromUtf8(isolate, "size", String::kInternalizedString), Integer::New(isolate, cache->data.size()));
+  stats->Set(String::NewFromUtf8(isolate, "buckets", String::kInternalizedString), Integer::New(isolate, cache->data.bucket_count()));
+  stats->Set(String::NewFromUtf8(isolate, "loadFactor", String::kInternalizedString), Number::New(isolate, cache->data.load_factor()));
+  stats->Set(String::NewFromUtf8(isolate, "maxLoadFactor", String::kInternalizedString), Number::New(isolate, cache->data.max_load_factor()));
 
-  return scope.Close(stats);
+  args.GetReturnValue().Set(scope.Escape(stats));
 }
