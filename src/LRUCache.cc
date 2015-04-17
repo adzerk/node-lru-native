@@ -44,6 +44,7 @@ void LRUCache::init(Handle<Object> exports)
 
 NAN_METHOD(LRUCache::New)
 {
+  NanScope();
   LRUCache* cache = new LRUCache();
 
   if (args.Length() > 0 && args[0]->IsObject())
