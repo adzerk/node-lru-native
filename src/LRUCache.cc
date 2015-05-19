@@ -70,7 +70,7 @@ NAN_METHOD(LRUCache::New)
 
   cache->Wrap(args.This());
 
-  NanReturnValue(args.This());
+  NanReturnValue(NanNew(args.This()));
 }
 
 LRUCache::LRUCache()
@@ -160,7 +160,7 @@ NAN_METHOD(LRUCache::Get)
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
 
     // Return the value.
-    NanReturnValue(entry->value);
+    NanReturnValue(NanNew(entry->value));
     //args.GetReturnValue().Set(scope.Escape(Local<Value>::New(isolate, entry->value)));
   }
 }
@@ -259,5 +259,5 @@ NAN_METHOD(LRUCache::Stats)
   stats->Set(NanNew("loadFactor"), NanNew<Integer>(static_cast<uint32_t>(cache->data.load_factor())));
   stats->Set(NanNew("maxLoadFactor"), NanNew<Integer>(static_cast<uint32_t>(cache->data.max_load_factor())));
 
-  NanReturnValue(stats);
+  NanReturnValue(NanNew(stats));
 }
