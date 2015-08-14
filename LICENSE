@@ -1,8 +1,8 @@
-Author: Nate Kohari <nkohari@adzerk.com>
-Copyright (c) 2013 Adzerk, Inc.
+Author: Hongcai Deng <admin@dhchouse.com>
+Copyright (c) 2015 Hongcai Deng.
 
-Based on the work of Isaac Wagner <isaacbwagner@gmail.com>
-  https://github.com/isaacbwagner/node-hashtable
+Based on the work of Nate Kohari <nkohari@adzerk.com>
+  https://github.com/adzerk/node-lru-native
 
 The MIT License (MIT)
 
