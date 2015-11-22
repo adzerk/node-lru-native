@@ -127,6 +127,37 @@ void LRUCache::remove(const HashMap::const_iterator itr)
   delete entry;
 }
 
+void LRUCache::gc(unsigned long now)
+{
+  HashMap::iterator itr;
+  HashEntry* entry;
+
+  if (this->maxAge != 0) {
+    while (! this->lru.empty()) {
+      itr = this->data.find(this->lru.front());
+
+      if (itr == this->data.end())
+        break;
+
+      entry = itr->second;
+
+      // Stop removing when live entry is encountered.
+      if (now - entry->timestamp < this->maxAge)
+        break;
+
+      // Dispose the V8 handle contained in the entry.
+      entry->value.Dispose();
+
+      // Remove the entry from the hash and from the LRU list.
+      this->data.erase(itr);
+      this->lru.pop_front();
+
+      // Free the entry itself.
+      delete entry;
+    }
+  }
+}
+
 Handle<Value> LRUCache::Get(const Arguments& args)
 {
   HandleScope scope;
@@ -202,6 +233,9 @@ Handle<Value> LRUCache::Set(const Arguments& args)
     // Move the value to the end of the LRU list.
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
   }
+
+  // Remove items that have exceeded max age.
+  cache->gc(now);
 
   // Return undefined.
   return scope.Close(Handle<Value>());

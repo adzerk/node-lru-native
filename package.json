@@ -1,9 +1,10 @@
 {
   "name": "lru-native",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "a native LRU cache implementation",
   "devDependencies": {
     "chai": "latest",
+    "coffee-script": "1.7.1",
     "mocha": "latest"
   },
   "scripts": {
