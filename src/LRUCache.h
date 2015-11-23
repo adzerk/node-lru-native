@@ -53,6 +53,7 @@ private:
   void disposeAll();
   void evict();
   void remove(HashMap::const_iterator itr);
+  void gc(unsigned long now);
 
   static Handle<Value> New(const Arguments &args);
   static Handle<Value> Get(const Arguments &args);
