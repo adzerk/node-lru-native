@@ -1,12 +1,8 @@
-#include <node.h>
-#include <v8.h>
+#include <nan.h>
 #include "LRUCache.h"
 
-using namespace v8;
-
-void init(Handle<Object> exports)
-{
-	LRUCache::init(exports);
+NAN_MODULE_INIT(Init) {
+	LRUCache::Init(target);
 }
 
-NODE_MODULE(native, init)
+NODE_MODULE(native, Init)
