@@ -2,233 +2,146 @@
 #include <sys/time.h>
 #include <math.h>
 
+using namespace v8;
+
 #ifndef __APPLE__
 #include <unordered_map>
 #endif
 
-using namespace v8;
-
-unsigned long getCurrentTime()
-{
+unsigned long getCurrentTime() {
   timeval tv;
   gettimeofday(&tv, NULL);
   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-std::string getStringValue(Handle<Value> value)
-{
+std::string getStringValue(v8::Handle<Value> value) {
   String::Utf8Value keyUtf8Value(value);
   return std::string(*keyUtf8Value);
 }
 
-void LRUCache::init(Handle<Object> exports)
-{
-  Local<String> className = String::NewSymbol("LRUCache");
+Nan::Persistent<Function> LRUCache::constructor;
 
-  Local<FunctionTemplate> constructor = FunctionTemplate::New(New);
-  constructor->SetClassName(className);
+NAN_MODULE_INIT(LRUCache::Init) {
+  Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
+  tpl->SetClassName(Nan::New("LRUCache").ToLocalChecked());
+  tpl->InstanceTemplate()->SetInternalFieldCount(6);
 
-  Handle<ObjectTemplate> instance = constructor->InstanceTemplate();
-  instance->SetInternalFieldCount(6);
-
-  Handle<ObjectTemplate> prototype = constructor->PrototypeTemplate();
-  prototype->Set("get", FunctionTemplate::New(Get)->GetFunction());
-  prototype->Set("set", FunctionTemplate::New(Set)->GetFunction());
-  prototype->Set("remove", FunctionTemplate::New(Remove)->GetFunction());
-  prototype->Set("clear", FunctionTemplate::New(Clear)->GetFunction());
-  prototype->Set("size", FunctionTemplate::New(Size)->GetFunction());
-  prototype->Set("stats", FunctionTemplate::New(Stats)->GetFunction());
-
-  exports->Set(className, Persistent<Function>::New(constructor->GetFunction()));
+  Nan::SetPrototypeMethod(tpl, "get", Get);
+  Nan::SetPrototypeMethod(tpl, "set", Set);
+  Nan::SetPrototypeMethod(tpl, "remove", Remove);
+  Nan::SetPrototypeMethod(tpl, "clear", Clear);
+  Nan::SetPrototypeMethod(tpl, "size", Size);
+  Nan::SetPrototypeMethod(tpl, "stats", Stats);
+  
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  Nan::Set(target, Nan::New("LRUCache").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
 
-Handle<Value> LRUCache::New(const Arguments& args)
-{
-  LRUCache* cache = new LRUCache();
+NAN_METHOD(LRUCache::New) {
+  if (info.IsConstructCall()) {
+    LRUCache* cache = new LRUCache();
+    
+    if (info.Length() > 0 && info[0]->IsObject()) {
+      Local<Object> config = info[0]->ToObject();
+      Local<Value> prop;
 
-  if (args.Length() > 0 && args[0]->IsObject())
-  {
-    Local<Object> config = args[0]->ToObject();
+      prop = config->Get(Nan::New("maxElements").ToLocalChecked());
+      if (!prop->IsUndefined() && prop->IsUint32()) {
+        cache->maxElements = prop->Uint32Value();
+      }
 
-    Local<Value> maxElements = config->Get(String::NewSymbol("maxElements"));
-    if (maxElements->IsUint32())
-      cache->maxElements = maxElements->Uint32Value();
+      prop = config->Get(Nan::New("maxAge").ToLocalChecked());
+      if (!prop->IsUndefined() && prop->IsUint32()) {
+        cache->maxAge = prop->Uint32Value();
+      }
 
-    Local<Value> maxAge = config->Get(String::NewSymbol("maxAge"));
-    if (maxAge->IsUint32())
-      cache->maxAge = maxAge->Uint32Value();
-
-    Local<Value> maxLoadFactor = config->Get(String::NewSymbol("maxLoadFactor"));
-    if (maxLoadFactor->IsNumber())
-      cache->data.max_load_factor(maxLoadFactor->NumberValue());
-
-    Local<Value> size = config->Get(String::NewSymbol("size"));
-    if (size->IsUint32())
-      cache->data.rehash(ceil(size->Uint32Value() / cache->data.max_load_factor()));
-  }
-
-  cache->Wrap(args.This());
-  return args.This();
-}
-
-LRUCache::LRUCache()
-{
-  this->maxElements = 0;
-  this->maxAge = 0;
-}
-
-LRUCache::~LRUCache()
-{
-  this->disposeAll();
-}
-
-void LRUCache::disposeAll()
-{
-  for (HashMap::iterator itr = this->data.begin(); itr != this->data.end(); itr++)
-  {
-    HashEntry* entry = itr->second;
-    entry->value.Dispose();
-    delete entry;
-  }
-}
-
-void LRUCache::evict()
-{
-  const HashMap::iterator itr = this->data.find(this->lru.front());
-
-  if (itr == this->data.end())
-    return;
-
-  HashEntry* entry = itr->second;
-
-  // Dispose the V8 handle contained in the entry.
-  entry->value.Dispose();
-
-  // Remove the entry from the hash and from the LRU list.
-  this->data.erase(itr);
-  this->lru.pop_front();
-
-  // Free the entry itself.
-  delete entry;
-}
-
-void LRUCache::remove(const HashMap::const_iterator itr)
-{
-  HashEntry* entry = itr->second;
-
-  // Dispose the V8 handle contained in the entry.
-  entry->value.Dispose();
-
-  // Remove the entry from the hash and from the LRU list.
-  this->data.erase(itr);
-  this->lru.erase(entry->pointer);
-
-  // Free the entry itself.
-  delete entry;
-}
-
-void LRUCache::gc(unsigned long now)
-{
-  HashMap::iterator itr;
-  HashEntry* entry;
-
-  if (this->maxAge != 0) {
-    while (! this->lru.empty()) {
-      itr = this->data.find(this->lru.front());
-
-      if (itr == this->data.end())
-        break;
-
-      entry = itr->second;
-
-      // Stop removing when live entry is encountered.
-      if (now - entry->timestamp < this->maxAge)
-        break;
-
-      // Dispose the V8 handle contained in the entry.
-      entry->value.Dispose();
-
-      // Remove the entry from the hash and from the LRU list.
-      this->data.erase(itr);
-      this->lru.pop_front();
-
-      // Free the entry itself.
-      delete entry;
+      prop = config->Get(Nan::New("maxLoadFactor").ToLocalChecked());
+      if (!prop->IsUndefined() && prop->IsNumber()) {
+        cache->data.max_load_factor(prop->NumberValue());
+      }
+      
+      prop = config->Get(Nan::New("size").ToLocalChecked());
+      if (!prop->IsUndefined() && prop->IsUint32()) {
+        cache->data.rehash(ceil(prop->Uint32Value() / cache->data.max_load_factor()));
+      }
     }
+    
+    cache->Wrap(info.This());
+    info.GetReturnValue().Set(info.This());
+  }
+  else {
+    const int argc = 1;
+    Local<Value> argv[argc] = { info[0] };
+    Local<v8::Function> ctor = Nan::New<v8::Function>(constructor);
+    info.GetReturnValue().Set(ctor->NewInstance(argc, argv));
   }
 }
 
-Handle<Value> LRUCache::Get(const Arguments& args)
-{
-  HandleScope scope;
-  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+NAN_METHOD(LRUCache::Get) {
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  if (args.Length() != 1)
-    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for get(), expected 1")));
+  if (info.Length() != 1) {
+    Nan::ThrowRangeError("Incorrect number of arguments for get(), expected 1");
+  }
 
-  std::string key = getStringValue(args[0]);
+  std::string key = getStringValue(info[0]);
   const HashMap::const_iterator itr = cache->data.find(key);
 
   // If the specified entry doesn't exist, return undefined.
-  if (itr == cache->data.end())
-    return scope.Close(Handle<Value>());
+  if (itr == cache->data.end()) {
+    info.GetReturnValue().SetUndefined();
+    return;
+  }
 
   HashEntry* entry = itr->second;
 
-  if (cache->maxAge > 0 && getCurrentTime() - entry->timestamp > cache->maxAge)
-  {
+  if (cache->maxAge > 0 && getCurrentTime() - entry->timestamp > cache->maxAge) {
     // The entry has passed the maximum age, so we need to remove it.
     cache->remove(itr);
 
     // Return undefined.
-    return scope.Close(Handle<Value>());
+    info.GetReturnValue().SetUndefined();
   }
-  else
-  {
+  else {
     // Move the value to the end of the LRU list.
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
 
     // Return the value.
-    return scope.Close(entry->value);
+    info.GetReturnValue().Set(Nan::New(entry->value));
   }
 }
 
-Handle<Value> LRUCache::Set(const Arguments& args)
-{
-  HandleScope scope;
-  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+NAN_METHOD(LRUCache::Set) {
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
   unsigned long now = cache->maxAge == 0 ? 0 : getCurrentTime();
 
-  if (args.Length() != 2)
-    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for set(), expected 2")));
+  if (info.Length() != 2) {
+    Nan::ThrowRangeError("Incorrect number of arguments for set(), expected 2");
+  }
 
-  std::string key = getStringValue(args[0]);
-  Local<Value> value = args[1];
+  std::string key = getStringValue(info[0]);
+  Local<Value> value = info[1];
   const HashMap::iterator itr = cache->data.find(key);
 
-  if (itr == cache->data.end())
-  {
+  if (itr == cache->data.end()) {
     // We're adding a new item. First ensure we have space.
-    if (cache->maxElements > 0 && cache->data.size() == cache->maxElements)
+    if (cache->maxElements > 0 && cache->data.size() == cache->maxElements) {
       cache->evict();
+    }
 
     // Add the value to the end of the LRU list.
     KeyList::iterator pointer = cache->lru.insert(cache->lru.end(), key);
 
     // Add the entry to the key-value map.
-    HashEntry* entry = new HashEntry(Persistent<Value>::New(value), pointer, now);
+    HashEntry* entry = new HashEntry(value, now, pointer);
     cache->data.insert(std::make_pair(key, entry));
   }
-  else
-  {
+  else {
+    // We're replacing an existing value.
     HashEntry* entry = itr->second;
 
-    // We're replacing an existing value, so dispose the old V8 handle to ensure it gets GC'd.
-    entry->value.Dispose();
-
-    // Replace the value in the key-value map with the new one, and update the timestamp.
-    entry->value = Persistent<Value>::New(value);
-    entry->timestamp = now;
+    // Dispose the old value in the key-value map, replacing it with the new one, and update the timestamp.
+    entry->set(value, now);
 
     // Move the value to the end of the LRU list.
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
@@ -238,55 +151,133 @@ Handle<Value> LRUCache::Set(const Arguments& args)
   cache->gc(now);
 
   // Return undefined.
-  return scope.Close(Handle<Value>());
+  info.GetReturnValue().SetUndefined();
 }
 
-Handle<Value> LRUCache::Remove(const Arguments& args)
-{
-  HandleScope scope;
-  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+NAN_METHOD(LRUCache::Remove) {
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  if (args.Length() != 1)
-    return ThrowException(Exception::RangeError(String::New("Incorrect number of arguments for remove(), expected 1")));
+  if (info.Length() != 1) {
+    Nan::ThrowRangeError("Incorrect number of arguments for remove(), expected 1");
+  }
 
-  std::string key = getStringValue(args[0]);
+  std::string key = getStringValue(info[0]);
   const HashMap::iterator itr = cache->data.find(key);
 
-  if (itr != cache->data.end())
+  if (itr != cache->data.end()) {
     cache->remove(itr);
+  }
 
-  return scope.Close(Handle<Value>());
+  info.GetReturnValue().SetUndefined();
 }
 
-Handle<Value> LRUCache::Clear(const Arguments& args)
-{
-  HandleScope scope;
-  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+NAN_METHOD(LRUCache::Clear) {
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
   cache->disposeAll();
   cache->data.clear();
   cache->lru.clear();
 
-  return scope.Close(Handle<Value>());
+  info.GetReturnValue().SetUndefined();
 }
 
-Handle<Value> LRUCache::Size(const Arguments& args)
-{
-  HandleScope scope;
-  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
-  return scope.Close(Integer::New(cache->data.size()));
+NAN_METHOD(LRUCache::Size) {
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
+  info.GetReturnValue().Set(Nan::New<Number>(cache->data.size()));
 }
 
-Handle<Value> LRUCache::Stats(const Arguments& args)
-{
-  HandleScope scope;
-  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(args.This());
+NAN_METHOD(LRUCache::Stats) {
+  LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  Local<Object> stats = Object::New();
-  stats->Set(String::NewSymbol("size"), Integer::New(cache->data.size()));
-  stats->Set(String::NewSymbol("buckets"), Integer::New(cache->data.bucket_count()));
-  stats->Set(String::NewSymbol("loadFactor"), Number::New(cache->data.load_factor()));
-  stats->Set(String::NewSymbol("maxLoadFactor"), Number::New(cache->data.max_load_factor()));
+  Local<Object> stats = Nan::New<Object>();
+  stats->Set(Nan::New("size").ToLocalChecked(), Nan::New<Number>(cache->data.size()));
+  stats->Set(Nan::New("buckets").ToLocalChecked(), Nan::New<Number>(cache->data.bucket_count()));
+  stats->Set(Nan::New("loadFactor").ToLocalChecked(), Nan::New<Number>(cache->data.load_factor()));
+  stats->Set(Nan::New("maxLoadFactor").ToLocalChecked(), Nan::New<Number>(cache->data.max_load_factor()));
 
-  return scope.Close(stats);
+  info.GetReturnValue().Set(stats);
+}
+
+LRUCache::LRUCache() {
+  this->maxElements = 0;
+  this->maxAge = 0;
+}
+
+LRUCache::~LRUCache() {
+  this->disposeAll();
+}
+
+void LRUCache::disposeAll() {
+  for (HashMap::iterator itr = this->data.begin(); itr != this->data.end(); itr++) {
+    HashEntry* entry = itr->second;
+    entry->dispose();
+    delete entry;
+  }
+}
+
+void LRUCache::evict() {
+  const HashMap::iterator itr = this->data.find(this->lru.front());
+
+  if (itr == this->data.end()) {
+    return;
+  }
+
+  HashEntry* entry = itr->second;
+
+  // Dispose the V8 handle contained in the entry.
+  entry->dispose();
+
+  // Remove the entry from the hash and from the LRU list.
+  this->data.erase(itr);
+  this->lru.pop_front();
+
+  // Free the entry itself.
+  delete entry;
+}
+
+void LRUCache::remove(const HashMap::const_iterator itr) {
+  HashEntry* entry = itr->second;
+
+  // Dispose the V8 handle contained in the entry.
+  entry->dispose();
+
+  // Remove the entry from the hash and from the LRU list.
+  this->data.erase(itr);
+  this->lru.erase(entry->pointer);
+
+  // Free the entry itself.
+  delete entry;
+}
+
+void LRUCache::gc(unsigned long now) {
+  HashMap::iterator itr;
+  HashEntry* entry;
+  
+  // If there is no maximum age, we won't evict based on age.
+  if (this->maxAge == 0) {
+    return;
+  }
+
+  while (!this->lru.empty()) {
+    itr = this->data.find(this->lru.front());
+
+    if (itr == this->data.end())
+      break;
+
+    entry = itr->second;
+
+    // Stop removing when live entry is encountered.
+    if (now - entry->timestamp < this->maxAge)
+      break;
+
+    // Dispose the V8 handle contained in the entry.
+    entry->dispose();
+
+    // Remove the entry from the hash and from the LRU list.
+    this->data.erase(itr);
+    this->lru.pop_front();
+
+    // Free the entry itself.
+    delete entry;
+  }
 }
