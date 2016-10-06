@@ -103,6 +103,11 @@ NAN_METHOD(LRUCache::Get) {
     info.GetReturnValue().SetUndefined();
   }
   else {
+    if (cache->maxAge > 0) {
+      //update last access timestamp
+      entry->touch(getCurrentTime());
+    }
+
     // Move the value to the end of the LRU list.
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
 

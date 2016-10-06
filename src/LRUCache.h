@@ -51,7 +51,11 @@ private:
       this->value.Reset(value);
       this->timestamp = timestamp;
     }
-    
+
+    void touch(unsigned long timestamp) {
+      this->timestamp = timestamp;
+    }
+
     void dispose() {
       this->value.Reset();
     }
