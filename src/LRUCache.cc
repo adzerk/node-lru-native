@@ -32,7 +32,7 @@ NAN_MODULE_INIT(LRUCache::Init) {
   Nan::SetPrototypeMethod(tpl, "clear", Clear);
   Nan::SetPrototypeMethod(tpl, "size", Size);
   Nan::SetPrototypeMethod(tpl, "stats", Stats);
-  
+
   constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
   Nan::Set(target, Nan::New("LRUCache").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
@@ -40,7 +40,7 @@ NAN_MODULE_INIT(LRUCache::Init) {
 NAN_METHOD(LRUCache::New) {
   if (info.IsConstructCall()) {
     LRUCache* cache = new LRUCache();
-    
+
     if (info.Length() > 0 && info[0]->IsObject()) {
       Local<Object> config = info[0]->ToObject();
       Local<Value> prop;
@@ -59,13 +59,13 @@ NAN_METHOD(LRUCache::New) {
       if (!prop->IsUndefined() && prop->IsNumber()) {
         cache->data.max_load_factor(prop->NumberValue());
       }
-      
+
       prop = config->Get(Nan::New("size").ToLocalChecked());
       if (!prop->IsUndefined() && prop->IsUint32()) {
         cache->data.rehash(ceil(prop->Uint32Value() / cache->data.max_load_factor()));
       }
     }
-    
+
     cache->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
   }
@@ -257,9 +257,14 @@ void LRUCache::remove(const HashMap::const_iterator itr) {
 void LRUCache::gc(unsigned long now) {
   HashMap::iterator itr;
   HashEntry* entry;
-  
+
   // If there is no maximum age, we won't evict based on age.
   if (this->maxAge == 0) {
+    return;
+  }
+
+  static unsigned long counter = 0;
+  if ((++counter)%100 != 0) {
     return;
   }
 
