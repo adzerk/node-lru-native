@@ -95,7 +95,8 @@ NAN_METHOD(LRUCache::Get) {
 
   HashEntry* entry = itr->second;
 
-  if (cache->maxAge > 0 && getCurrentTime() - entry->timestamp > cache->maxAge) {
+  unsigned long now = getCurrentTime();
+  if (cache->maxAge > 0 && now - entry->timestamp > cache->maxAge) {
     // The entry has passed the maximum age, so we need to remove it.
     cache->remove(itr);
 
@@ -105,7 +106,7 @@ NAN_METHOD(LRUCache::Get) {
   else {
     if (cache->maxAge > 0) {
       //update last access timestamp
-      entry->touch(getCurrentTime());
+      entry->touch(now);
     }
 
     // Move the value to the end of the LRU list.
