@@ -9,8 +9,8 @@ using namespace v8;
 #endif
 
 unsigned long getCurrentTime() {
-  timeval tv;
-  gettimeofday(&tv, NULL);
+    timeval tv;
+    gettimeofday(&tv, NULL);
   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
@@ -95,7 +95,7 @@ NAN_METHOD(LRUCache::Get) {
 
   HashEntry* entry = itr->second;
 
-  unsigned long now = getCurrentTime();
+  unsigned long now = cache->maxAge == 0 ? 0 : getCurrentTime();
   if (cache->maxAge > 0 && now - entry->timestamp > cache->maxAge) {
     // The entry has passed the maximum age, so we need to remove it.
     cache->remove(itr);
@@ -265,7 +265,7 @@ void LRUCache::gc(unsigned long now) {
   }
 
   static unsigned long counter = 0;
-  if ((++counter)%100 != 0) {
+  if ((++counter)%10 != 0) {
     return;
   }
 
