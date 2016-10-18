@@ -105,7 +105,8 @@ Set the maximum age (in milliseconds) of an item
 
 # Changelog
 
-- 0.5.0 -- setMaxElements, setMaxAge API added. Update last touched time when get a value.
+- 0.5.0 -- Added setMaxElements, setMaxAge API. Update last touched time when get a value.
+- (forked)
 - 0.4.0 -- Added support for newer versions of Node via NAN
 - 0.3.0 -- Changed memory allocation strategy, fixed issue where remove() would do a seek through the LRU list, code cleanup
 - 0.2.0 -- Fixed issue where maxAge-based removal would result in a seek through the LRU list
