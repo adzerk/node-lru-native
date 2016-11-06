@@ -94,6 +94,15 @@ Returns the number of items in the cache.
 
 Returns a hash containing internal information about the cache.
 
+## setMaxElements(maxElements)
+
+Set the maximum number of items
+
+## setMaxAge(maxAge)
+
+Set the maximum age (in milliseconds) of an item
+
+
 # Changelog
 
 - 0.4.0 -- Added support for newer versions of Node via NAN
