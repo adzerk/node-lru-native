@@ -1,14 +1,39 @@
 {
-  "name": "lru-native",
-  "version": "0.4.0",
-  "description": "a native LRU cache implementation",
+  "name": "lru-native2",
+  "version": "1.0.1",
+  "description": "LRU cache module written in C++",
+  "keywords": [
+	"LRU",
+	"cache",
+	"native",
+	"c++"
+  ],
+  "maintainers": [
+	{
+	  "name": "Kibae Shin",
+	  "email": "nonunnet@gmail.com",
+	  "url": "https://github.com/kibae"
+	}
+  ],
+  "author": {
+	"name": "Kibae Shin",
+	"email": "nonunnet@gmail.com"
+  },
+  "repository": {
+	"type": "git",
+	"url": "git://github.com/kibae/node-lru-native.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+	"nan": "latest"
+  },
   "devDependencies": {
-    "chai": "latest",
-    "coffee-script": "1.7.1",
-    "mocha": "latest",
-    "nan": "^2.2.0"
+	"chai": "latest",
+	"coffee-script": "1.7.1",
+	"mocha": "latest",
+	"nan": "^2.2.0"
   },
   "scripts": {
-    "valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec --compilers coffee:coffee-script"
+	"valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec --compilers coffee:coffee-script"
   }
 }

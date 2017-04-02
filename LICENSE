@@ -1,6 +1,9 @@
 Author: Nate Kohari <nkohari@adzerk.com>
 Copyright (c) 2013 Adzerk, Inc.
 
+2017-04-01 forked by
+Kibae Shin <nonunnet@gmail.com>
+
 Based on the work of Isaac Wagner <isaacbwagner@gmail.com>
   https://github.com/isaacbwagner/node-hashtable
 
