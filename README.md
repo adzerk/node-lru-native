@@ -1,6 +1,3 @@
-node-lru-native
-===============
-
 This is an implementation of a simple in-memory cache for node.js, supporting LRU (least-recently-used) eviction
 and TTL expirations.
 
