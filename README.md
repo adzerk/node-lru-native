@@ -21,13 +21,13 @@ Based on the [node-hashtable](https://github.com/isaacbwagner/node-hashtable) li
 Install via npm:
 
 ```
-$ npm install lru-native
+$ npm install lru-native2
 ```
 
 Then:
 
 ```javascript
-var LRUCache = require('lru-native');
+var LRUCache = require('lru-native2');
 var cache = new LRUCache({ maxElements: 1000 });
 cache.set('some-key', 42);
 var value = cache.get('some-key');
@@ -105,6 +105,8 @@ Set the maximum age (in milliseconds) of an item
 
 # Changelog
 
+- 1.0.0 -- Update the timestamp when get a value(like common LRU cache). Added SetMaxAge(), SetMaxElements()
+- *forked*
 - 0.4.0 -- Added support for newer versions of Node via NAN
 - 0.3.0 -- Changed memory allocation strategy, fixed issue where remove() would do a seek through the LRU list, code cleanup
 - 0.2.0 -- Fixed issue where maxAge-based removal would result in a seek through the LRU list
