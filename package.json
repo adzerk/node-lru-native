@@ -33,6 +33,7 @@
 	"nan": "^2.2.0"
   },
   "scripts": {
+	"test": "node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
 	"valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec"
   }
 }

@@ -1,9 +1,17 @@
 language: node_js
 
+os:
+  - linux
+  - osx
+
 addons:
   apt:
     packages:
       - valgrind
+
+script:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then npm run valgrind; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then npm test; fi
 
 node_js:
   - 8
