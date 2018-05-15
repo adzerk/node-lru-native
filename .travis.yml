@@ -7,3 +7,4 @@ addons:
 
 node_js:
   - 8
+  - 10
