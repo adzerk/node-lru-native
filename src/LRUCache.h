@@ -25,7 +25,7 @@ private:
 
   LRUCache();
   ~LRUCache();
-  
+
   static NAN_METHOD(New);
   static NAN_METHOD(Get);
   static NAN_METHOD(Set);
@@ -33,7 +33,7 @@ private:
   static NAN_METHOD(Clear);
   static NAN_METHOD(Size);
   static NAN_METHOD(Stats);  
-  
+
   static Nan::Persistent<Function> constructor;
   typedef std::list<std::string> KeyList;
 
@@ -46,12 +46,16 @@ private:
       this->set(value, timestamp);
       this->pointer = pointer;
     }
-    
+
+    void set1(Local<Value> value) {
+      this->value.Reset(value);
+    }
+
     void set(Local<Value> value, unsigned long timestamp) {
       this->value.Reset(value);
       this->timestamp = timestamp;
     }
-    
+
     void dispose() {
       this->value.Reset();
     }

@@ -32,7 +32,7 @@ NAN_MODULE_INIT(LRUCache::Init) {
   Nan::SetPrototypeMethod(tpl, "clear", Clear);
   Nan::SetPrototypeMethod(tpl, "size", Size);
   Nan::SetPrototypeMethod(tpl, "stats", Stats);
-  
+
   constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
   Nan::Set(target, Nan::New("LRUCache").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
@@ -40,7 +40,7 @@ NAN_MODULE_INIT(LRUCache::Init) {
 NAN_METHOD(LRUCache::New) {
   if (info.IsConstructCall()) {
     LRUCache* cache = new LRUCache();
-    
+
     if (info.Length() > 0 && info[0]->IsObject()) {
       Local<Object> config = info[0]->ToObject();
       Local<Value> prop;
@@ -59,13 +59,13 @@ NAN_METHOD(LRUCache::New) {
       if (!prop->IsUndefined() && prop->IsNumber()) {
         cache->data.max_load_factor(prop->NumberValue());
       }
-      
+
       prop = config->Get(Nan::New("size").ToLocalChecked());
       if (!prop->IsUndefined() && prop->IsUint32()) {
         cache->data.rehash(ceil(prop->Uint32Value() / cache->data.max_load_factor()));
       }
     }
-    
+
     cache->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
   }
@@ -113,17 +113,20 @@ NAN_METHOD(LRUCache::Get) {
 
 NAN_METHOD(LRUCache::Set) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
-  unsigned long now = cache->maxAge == 0 ? 0 : getCurrentTime();
+  int len = info.Length();
+  unsigned long now;
 
-  if (info.Length() != 2) {
-    Nan::ThrowRangeError("Incorrect number of arguments for set(), expected 2");
+  if (len != 2 && len != 3) {
+    Nan::ThrowRangeError("Incorrect number of arguments for set(), expected 2 or 3");
   }
 
   std::string key = getStringValue(info[0]);
   Local<Value> value = info[1];
   const HashMap::iterator itr = cache->data.find(key);
+  bool updateTimestamp = !(len == 3 && info[2]->IsFalse());
 
   if (itr == cache->data.end()) {
+    now = cache->maxAge == 0 ? 0 : getCurrentTime();
     // We're adding a new item. First ensure we have space.
     if (cache->maxElements > 0 && cache->data.size() == cache->maxElements) {
       cache->evict();
@@ -140,11 +143,19 @@ NAN_METHOD(LRUCache::Set) {
     // We're replacing an existing value.
     HashEntry* entry = itr->second;
 
-    // Dispose the old value in the key-value map, replacing it with the new one, and update the timestamp.
-    entry->set(value, now);
+    if (! updateTimestamp) {
+      // Dispose the old value in the key-value map, replacing it with the new one.
+      entry->set1(value);
+    }
+    else {
+      now = cache->maxAge == 0 ? 0 : getCurrentTime();
 
-    // Move the value to the end of the LRU list.
-    cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
+      // Dispose the old value in the key-value map, replacing it with the new one, and update the timestamp.
+      entry->set(value, now);
+
+      // Move the value to the end of the LRU list.
+      cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
+    }
   }
 
   // Remove items that have exceeded max age.
@@ -252,7 +263,7 @@ void LRUCache::remove(const HashMap::const_iterator itr) {
 void LRUCache::gc(unsigned long now) {
   HashMap::iterator itr;
   HashEntry* entry;
-  
+
   // If there is no maximum age, we won't evict based on age.
   if (this->maxAge == 0) {
     return;

@@ -24,9 +24,9 @@ describe 'exceptions', ->
       it 'should throw a RangeError', ->
         assert.throw (-> cache.set('foo')), RangeError
 
-    describe 'when set() is called with three arguments', ->
+    describe 'when set() is called with four arguments', ->
       it 'should throw a RangeError', ->
-        assert.throw (-> cache.set('foo', 'bar', 'baz')), RangeError
+        assert.throw (-> cache.set('foo', 'bar', 'baz', 'baf')), RangeError
 
     describe 'when remove() is called with no arguments', ->
       it 'should throw a RangeError', ->

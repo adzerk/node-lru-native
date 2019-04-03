@@ -23,4 +23,30 @@ describe 'maxAge', ->
           value = cache.get 'foo'
           assert value is undefined, "value was #{value}, expected undefined"
           done()
-        ), 200
+        ), 125
+
+    describe 'when the value is reset less than 100ms after it is added', ->
+
+      it 'should return the value', (done) ->
+        cache.set 'foo', 42
+        setTimeout (->
+          cache.set 'foo', 42
+        ), 75
+        setTimeout (->
+          value = cache.get 'foo'
+          assert.equal value, 42
+          done()
+        ), 125
+
+    describe 'when the value is reset less than 100ms after it is added, with updateTimestamp false', ->
+
+      it 'should return undefined', (done) ->
+        cache.set 'foo', 42
+        setTimeout (->
+          cache.set 'foo', 42, false
+        ), 75
+        setTimeout (->
+          value = cache.get 'foo'
+          assert value is undefined, "value was #{value}, expected undefined"
+          done()
+        ), 125

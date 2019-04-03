@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+prog=$0
+
+warn() { [ $# -gt 0 ] && echo $prog: "$@" 1>&2; }
+abort() { warn "$@"; exit 1; }
+progress() { which pv > /dev/null 2>&1 && pv "$@" || cat; }
+
+usage() {
+  warn "$@"
+  cat <<EOT
+USAGE: $(basename $prog) [-h]
+
+Docker container launcher.
+
+OPTIONS:
+  -h          Print this and exit.
+EOT
+  exit;
+}
+
+# PUT OSX HAX HERE TY
+if [ `uname` == "Darwin" ]; then
+    echo "DOING OSX HAX"
+    USER_UID=1000
+    USER_GID=50
+else
+    USER_UID=$(id -u)
+    USER_GID=$(id -g)
+fi
+
+TAG=adzerk/node-lru-native
+VERSION=latest
+PROJECT_DIR=/opt/adzerk/bifrost/current
+VOL=""
+
+while getopts "h" o; do
+  case "${o}" in
+    h) usage ;;
+    ?) abort ;;
+  esac
+done
+shift $((OPTIND-1))
+
+mkdir -p .dockerhome
+
+make -C docker build |progress -N "DOCKERIZING" -w 80 > /dev/null || exit 1
+
+exec docker run \
+  --name $(echo $TAG |cut -d/ -f2)-$USER \
+  -v "$PWD:$PROJECT_DIR" \
+  -v "${PWD}/.dockerhome:$HOME" \
+  -e USER_HOME=$HOME \
+  -e USER_NAME=$USER \
+  -e USER_UID=$USER_UID \
+  -e USER_GID=$USER_GID \
+  -e PROJECT_DIR=$PROJECT_DIR \
+  --rm -it ${TAG}:${VERSION} $PROJECT_DIR/docker/startup.sh
