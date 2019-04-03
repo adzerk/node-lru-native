@@ -11,7 +11,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "maintainers": [
-	  {
+    {
       "name": "Kibae Shin",
       "email": "nonunnet@gmail.com",
       "url": "https://github.com/kibae"
@@ -27,12 +27,11 @@
   },
   "license": "MIT",
   "dependencies": {
-	  "nan": "latest"
+    "nan": "^2.13.2"
   },
   "devDependencies": {
-    "chai": "latest",
-    "mocha": "latest",
-    "nan": "^2.2.0"
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4"
   },
   "scripts": {
     "test": "node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
