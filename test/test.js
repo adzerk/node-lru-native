@@ -1,40 +1,47 @@
-const LRUCache = require('../index.js');
-const Cache = new LRUCache();
+// tslint:disable-next-line: variable-name no-require-imports
+const LRUCache = require("../index.js")
+const cache = new LRUCache()
 
-Cache.set('test', 1);
-console.log('Set/Get');
-console.log(Cache.get('test'));
-console.log('\n\n');
+cache.set("test", 1)
+console.log("Set/Get")
+console.log(cache.get("test"))
+console.log("\n\n")
 
-console.log('SetMaxElements: remain 5 items');
-for (var i = 0; i < 10; i++) {
-	Cache.set('test' + i, i);
+const n = 10
+const smallerThanN = 5
+const t = 1000
+const smallerThanT = 500
+const largerThanT = 1600
+
+console.log("SetMaxElements: remain 5 items")
+for (let i = 0; i < n; i++) {
+  cache.set("test" + i, i)
 }
-Cache.setMaxElements(5);
-for (var i = 0; i < 10; i++) {
-	console.log(i, Cache.get('test' + i));
+cache.setMaxElements(smallerThanN)
+for (let i = 0; i < n; i++) {
+  console.log(i, cache.get("test" + i))
 }
-console.log('\n\n');
+console.log("\n\n")
 
-console.log('SetMaxAge #1: remain 5 items');
-Cache.setMaxAge(1000);
-for (var i = 0; i < 10; i++) {
-	console.log(i, Cache.get('test' + i));
+console.log("SetMaxAge #1: remain 5 items")
+cache.setMaxAge(t)
+for (let i = 0; i < n; i++) {
+  console.log(i, cache.get("test" + i))
 }
-console.log('\n\n');
+console.log("\n\n")
 
-setTimeout(function() {
-	console.log('SetMaxAge #2: remain 5 items');
-	for (var i = 0; i < 10; i++) {
-		console.log(i, Cache.get('test' + i));
-	}
-	console.log('\n\n');
-}, 500);
+setTimeout(() => {
+  console.log("SetMaxAge #2: remain 5 items")
+  for (let i = 0; i < n; i++) {
+    console.log(i, cache.get("test" + i))
+  }
+  console.log("\n\n")
+}, smallerThanT)
 
-setTimeout(function() {
-	console.log('SetMaxAge #3: remain 0 items');
-	for (var i = 0; i < 10; i++) {
-		console.log(i, Cache.get('test' + i));
-	}
-	console.log('\n\n');
-}, 1600);
+setTimeout(() => {
+  console.log("SetMaxAge #3: remain 0 items")
+  for (let i = 0; i < n; i++) {
+    console.log(i, cache.get("test" + i))
+  }
+  console.log("\n\n")
+}, largerThanT)
