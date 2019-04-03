@@ -1,12 +1,12 @@
 declare module "lru-native3" {
-  export interface LRUCacheOptions {
+  interface LRUCacheOptions {
     maxElements?: number
     maxAge?: number
     size: number
     maxLoadFactor: number
   }
 
-  export interface LRUCacheStats {
+  interface LRUCacheStats {
     size: number
     buckets: number
     loadFactor: number
@@ -15,16 +15,18 @@ declare module "lru-native3" {
 
   type K = string
 
-  export class LRUCache<V> {
+  class LRUCache<V> {
     constructor(options: LRUCacheOptions)
 
     public set(key: K, value: V): void
     public get(key: K): V
-    public setMaxElements(n: number)
-    public setMaxAge(millis: number)
+    public setMaxElements(n: number): void
+    public setMaxAge(millis: number): void
     public remove(key: K): void
     public clear(): void
     public size(): number
     public stats(): LRUCacheStats
   }
+
+  export = LRUCache
 }
