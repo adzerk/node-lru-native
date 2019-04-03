@@ -8,6 +8,8 @@
     "native",
     "c++"
   ],
+  "main": "index.js",
+  "types": "index.d.ts",
   "maintainers": [
 	  {
       "name": "Kibae Shin",
