@@ -107,7 +107,7 @@ NAN_METHOD(LRUCache::New) {
     const int argc = 1;
     Local<Value> argv[argc] = { info[0] };
     Local<v8::Function> ctor = Nan::New<v8::Function>(constructor);
-    info.GetReturnValue().Set(ctor->NewInstance(argc, argv));
+    info.GetReturnValue().Set(Nan::NewInstance(ctor, argc, argv).ToLocalChecked());
   }
 }
 
