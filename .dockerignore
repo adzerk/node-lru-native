@@ -1,0 +1,7 @@
+.build
+.git
+.gitignore
+.vscode
+test
+readme.md
+node_modules
