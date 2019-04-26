@@ -39,7 +39,7 @@ unsigned long getCurrentTime() {
 }
 
 std::string getStringValue(v8::Handle<Value> value) {
-  String::Utf8Value keyUtf8Value(value);
+  Nan::Utf8String keyUtf8Value(value);
   return std::string(*keyUtf8Value);
 }
 
