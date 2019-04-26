@@ -33,13 +33,13 @@
     "chai": "^4.2.0",
     "mocha": "^6.1.4",
     "tslint-lt": "^1.8.0",
-    "typescript": "^3.4.1"
+    "typescript": "^3.4.5"
   },
   "scripts": {
     "test": "npm run prettier && npm run lint && npm run build && node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
     "valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
     "build": "node-gyp rebuild",
-    "install": "npm run buildOnce",
+    "install": "npm run build",
     "lint": "tslint --format stylish --project .",
     "prettier": "prettier --config node_modules/tslint-lt/.prettierrc.yml --write \"{,!node_modules/}**/*.{ts,tsx,css,scss,html,js,jsx,yml,json}\""
   }
