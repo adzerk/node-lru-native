@@ -41,6 +41,7 @@
     "build": "node-gyp rebuild",
     "install": "npm run build",
     "lint": "tslint --format stylish --project .",
-    "prettier": "prettier --config node_modules/tslint-lt/.prettierrc.yml --write \"{,!node_modules/}**/*.{ts,tsx,css,scss,html,js,jsx,yml,json}\""
+    "prettier": "prettier --config node_modules/tslint-lt/.prettierrc.yml --write \"{,!node_modules/}**/*.{ts,tsx,css,scss,html,js,jsx,yml,json}\"",
+    "docker": "docker build ."
   }
 }
