@@ -1,3 +1,8 @@
 {
-  "extends": "tslint-lt"
+  "extends": "tslint-lt",
+  "jsRules": {
+    "no-require-imports": false,
+    "variable-name": false,
+    "no-magic-numbers": false
+  }
 }
