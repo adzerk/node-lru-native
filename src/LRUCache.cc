@@ -48,6 +48,26 @@ unsigned long getCurrentTime() {
     return Nan::ThrowTypeError("Invalid argument, type must be string. pos: " # idx); \
   }
 
+#define GET_FIELD(obj, name) \
+  Nan::Get(obj, Nan::New(name).ToLocalChecked())
+
+#define SET_FIELD(obj, name, val) \
+  Nan::Set(obj, Nan::New(name).ToLocalChecked(), val)
+
+#define IS_UNDEFINED(val) (val->IsUndefined())
+#define IS_UINT32(val)    (!IS_UNDEFINED(val) && val->IsUint32())
+#define IS_NUM(val)       (!IS_UNDEFINED(val) && val->IsNumber())
+
+inline std::string convertArgToString(const Local<Value> arg) {
+    Nan::Utf8String value(arg);
+    return std::string(*value, static_cast<std::size_t>(value.length()));
+}
+
+template<typename T>
+inline T convertLocalValueToRawType(const Local<Value> arg) {
+    return Nan::To<T>(arg).FromJust();
+}
+
 Nan::Persistent<Function> LRUCache::constructor;
 
 NAN_MODULE_INIT(LRUCache::Init) {
@@ -76,24 +96,24 @@ NAN_METHOD(LRUCache::New) {
       Local<Object> config = Nan::To<Object>(info[0]).ToLocalChecked();
       Local<Value> prop;
 
-      prop = Nan::Get(config, Nan::New("maxElements").ToLocalChecked()).ToLocalChecked();
-      if (!prop->IsUndefined() && prop->IsUint32()) {
-        cache->maxElements = Nan::To<uint32_t>(prop).FromJust();
+      prop = GET_FIELD(config, "maxElements").ToLocalChecked();
+      if (IS_UINT32(prop)) {
+        cache->maxElements = convertLocalValueToRawType<uint32_t>(prop);
       }
 
-      prop = Nan::Get(config, Nan::New("maxAge").ToLocalChecked()).ToLocalChecked();
-      if (!prop->IsUndefined() && prop->IsUint32()) {
-        cache->maxAge = Nan::To<uint32_t>(prop).FromJust();
+      prop = GET_FIELD(config, "maxAge").ToLocalChecked();
+      if (IS_UINT32(prop)) {
+        cache->maxAge = convertLocalValueToRawType<uint32_t>(prop);
       }
 
-      prop = Nan::Get(config, Nan::New("maxLoadFactor").ToLocalChecked()).ToLocalChecked();
-      if (!prop->IsUndefined() && prop->IsNumber()) {
-        cache->data.max_load_factor(Nan::To<double>(prop).FromJust());
+      prop = GET_FIELD(config, "maxLoadFactor").ToLocalChecked();
+      if (IS_NUM(prop)) {
+        cache->data.max_load_factor(convertLocalValueToRawType<double>(prop));
       }
 
-      prop = Nan::Get(config, Nan::New("size").ToLocalChecked()).ToLocalChecked();
-      if (!prop->IsUndefined() && prop->IsUint32()) {
-        cache->data.rehash(ceil(Nan::To<uint32_t>(prop).FromJust() / cache->data.max_load_factor()));
+      prop = GET_FIELD(config, "size").ToLocalChecked();
+      if (IS_UINT32(prop)) {
+        cache->data.rehash(ceil(convertLocalValueToRawType<uint32_t>(prop) / cache->data.max_load_factor()));
       }
     }
 
@@ -114,8 +134,7 @@ NAN_METHOD(LRUCache::Get) {
   ASSERT_ARG_LENGTH(1);
   ASSERT_ARG_TYPE_IS_STRING(0);
 
-  Nan::Utf8String utf8Key(info[0]);
-  std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
+  std::string key = convertArgToString(info[0]);
   const HashMap::const_iterator itr = cache->data.find(key);
 
   // If the specified entry doesn't exist, return undefined.
@@ -154,8 +173,7 @@ NAN_METHOD(LRUCache::Set) {
   ASSERT_ARG_LENGTH(2);
   ASSERT_ARG_TYPE_IS_STRING(0);
 
-  Nan::Utf8String utf8Key(info[0]);
-  std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
+  std::string key = convertArgToString(info[0]);
   Local<Value> value = info[1];
   const HashMap::iterator itr = cache->data.find(key);
 
@@ -197,8 +215,7 @@ NAN_METHOD(LRUCache::Remove) {
   ASSERT_ARG_LENGTH(1);
   ASSERT_ARG_TYPE_IS_STRING(0);
 
-  Nan::Utf8String utf8Key(info[0]);
-  std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
+  std::string key = convertArgToString(info[0]);
   const HashMap::iterator itr = cache->data.find(key);
 
   if (itr != cache->data.end()) {
@@ -227,10 +244,10 @@ NAN_METHOD(LRUCache::Stats) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
   Local<Object> stats = Nan::New<Object>();
-  stats->Set(Nan::New("size").ToLocalChecked(), Nan::New<Number>(cache->data.size()));
-  stats->Set(Nan::New("buckets").ToLocalChecked(), Nan::New<Number>(cache->data.bucket_count()));
-  stats->Set(Nan::New("loadFactor").ToLocalChecked(), Nan::New<Number>(cache->data.load_factor()));
-  stats->Set(Nan::New("maxLoadFactor").ToLocalChecked(), Nan::New<Number>(cache->data.max_load_factor()));
+  SET_FIELD(stats, "size", Nan::New<Number>(cache->data.size()));
+  SET_FIELD(stats, "buckets", Nan::New<Number>(cache->data.bucket_count()));
+  SET_FIELD(stats, "loadFactor", Nan::New<Number>(cache->data.load_factor()));
+  SET_FIELD(stats, "maxLoadFactor", Nan::New<Number>(cache->data.max_load_factor()));
 
   info.GetReturnValue().Set(stats);
 }
@@ -240,7 +257,7 @@ NAN_METHOD(LRUCache::SetMaxAge) {
 
   ASSERT_ARG_LENGTH(1);
 
-  cache->maxAge = Nan::To<int64_t>(info[0]).FromJust();
+  cache->maxAge = convertLocalValueToRawType<int64_t>(info[0]);
   cache->gc(getCurrentTime(), true);
 }
 
@@ -249,7 +266,7 @@ NAN_METHOD(LRUCache::SetMaxElements) {
 
   ASSERT_ARG_LENGTH(1);
 
-  cache->maxElements = Nan::To<int64_t>(info[0]).FromJust();
+  cache->maxElements = convertLocalValueToRawType<int64_t>(info[0]);
   while (cache->maxElements > 0 && cache->data.size() > cache->maxElements) {
     cache->evict();
   }
