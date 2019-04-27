@@ -1,4 +1,4 @@
-declare module "lru-native3" {
+declare module "lru-native2" {
   interface LRUCacheOptions {
     maxElements?: number
     maxAge?: number
