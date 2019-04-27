@@ -32,10 +32,6 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 
 using namespace v8;
 
-#ifndef __APPLE__
-#include <unordered_map>
-#endif
-
 unsigned long getCurrentTime() {
   timeval tv;
   gettimeofday(&tv, NULL);
@@ -43,7 +39,7 @@ unsigned long getCurrentTime() {
 }
 
 std::string getStringValue(v8::Handle<Value> value) {
-  String::Utf8Value keyUtf8Value(value);
+  Nan::Utf8String keyUtf8Value(value);
   return std::string(*keyUtf8Value);
 }
 
