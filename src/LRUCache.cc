@@ -38,15 +38,6 @@ unsigned long getCurrentTime() {
   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-std::string getStringValue(v8::Handle<Value> value) {
-  Nan::Utf8String keyUtf8Value(value);
-  return std::string(*keyUtf8Value);
-}
-
-int64_t getLongValue(v8::Handle<Value> value) {
-  return value->ToInteger()->Value();
-}
-
 Nan::Persistent<Function> LRUCache::constructor;
 
 NAN_MODULE_INIT(LRUCache::Init) {
@@ -72,27 +63,27 @@ NAN_METHOD(LRUCache::New) {
     LRUCache* cache = new LRUCache();
 
     if (info.Length() > 0 && info[0]->IsObject()) {
-      Local<Object> config = info[0]->ToObject();
+      Local<Object> config = Nan::To<Object>(info[0]).ToLocalChecked();
       Local<Value> prop;
 
-      prop = config->Get(Nan::New("maxElements").ToLocalChecked());
+      prop = Nan::Get(config, Nan::New("maxElements").ToLocalChecked()).ToLocalChecked();
       if (!prop->IsUndefined() && prop->IsUint32()) {
-        cache->maxElements = prop->Uint32Value();
+        cache->maxElements = Nan::To<uint32_t>(prop).FromJust();
       }
 
-      prop = config->Get(Nan::New("maxAge").ToLocalChecked());
+      prop = Nan::Get(config, Nan::New("maxAge").ToLocalChecked()).ToLocalChecked();
       if (!prop->IsUndefined() && prop->IsUint32()) {
-        cache->maxAge = prop->Uint32Value();
+        cache->maxAge = Nan::To<uint32_t>(prop).FromJust();
       }
 
-      prop = config->Get(Nan::New("maxLoadFactor").ToLocalChecked());
+      prop = Nan::Get(config, Nan::New("maxLoadFactor").ToLocalChecked()).ToLocalChecked();
       if (!prop->IsUndefined() && prop->IsNumber()) {
-        cache->data.max_load_factor(prop->NumberValue());
+        cache->data.max_load_factor(Nan::To<double>(prop).FromJust());
       }
 
-      prop = config->Get(Nan::New("size").ToLocalChecked());
+      prop = Nan::Get(config, Nan::New("size").ToLocalChecked()).ToLocalChecked();
       if (!prop->IsUndefined() && prop->IsUint32()) {
-        cache->data.rehash(ceil(prop->Uint32Value() / cache->data.max_load_factor()));
+        cache->data.rehash(ceil(Nan::To<uint32_t>(prop).FromJust() / cache->data.max_load_factor()));
       }
     }
 
@@ -114,7 +105,8 @@ NAN_METHOD(LRUCache::Get) {
     Nan::ThrowRangeError("Incorrect number of arguments for get(), expected 1");
   }
 
-  std::string key = getStringValue(info[0]);
+  Nan::Utf8String utf8Key(info[0]);
+  std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
   const HashMap::const_iterator itr = cache->data.find(key);
 
   // If the specified entry doesn't exist, return undefined.
@@ -154,7 +146,8 @@ NAN_METHOD(LRUCache::Set) {
     Nan::ThrowRangeError("Incorrect number of arguments for set(), expected 2");
   }
 
-  std::string key = getStringValue(info[0]);
+  Nan::Utf8String utf8Key(info[0]);
+  std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
   Local<Value> value = info[1];
   const HashMap::iterator itr = cache->data.find(key);
 
@@ -196,7 +189,8 @@ NAN_METHOD(LRUCache::Remove) {
     Nan::ThrowRangeError("Incorrect number of arguments for remove(), expected 1");
   }
 
-  std::string key = getStringValue(info[0]);
+  Nan::Utf8String utf8Key(info[0]);
+  std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
   const HashMap::iterator itr = cache->data.find(key);
 
   if (itr != cache->data.end()) {
@@ -240,7 +234,7 @@ NAN_METHOD(LRUCache::SetMaxAge) {
     Nan::ThrowRangeError("Incorrect number of arguments for setMaxAge(), expected 1");
   }
 
-  cache->maxAge = getLongValue(info[0]);
+  cache->maxAge = Nan::To<int64_t>(info[0]).FromJust();
   cache->gc(getCurrentTime(), true);
 }
 
@@ -251,7 +245,7 @@ NAN_METHOD(LRUCache::SetMaxElements) {
     Nan::ThrowRangeError("Incorrect number of arguments for setMaxElements(), expected 1");
   }
 
-  cache->maxElements = getLongValue(info[0]);
+  cache->maxElements = Nan::To<int64_t>(info[0]).FromJust();
   while (cache->maxElements > 0 && cache->data.size() > cache->maxElements) {
     cache->evict();
   }
