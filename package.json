@@ -36,11 +36,11 @@
     "typescript": "^3.4.5"
   },
   "scripts": {
-    "test": "npm run prettier && npm run lint && npm run build && node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
-    "valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
+    "test": "npm run build && node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
+    "valgrind": "npm run build && valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
     "build": "node-gyp rebuild",
     "install": "npm run build",
-    "lint": "tslint --format stylish --project .",
+    "lint": "npm run prettier && tslint --format stylish --project .",
     "prettier": "prettier --config node_modules/tslint-lt/.prettierrc.yml --write \"{,!node_modules/}**/*.{ts,tsx,css,scss,html,js,jsx,yml,json}\"",
     "docker": "docker build ."
   }
