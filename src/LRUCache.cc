@@ -38,6 +38,16 @@ unsigned long getCurrentTime() {
   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
+#define ASSERT_ARG_LENGTH(length) \
+  if (info.Length() != length) { \
+    return Nan::ThrowRangeError("Incorrect number of arguments, exceeded " # length); \
+  }
+
+#define ASSERT_ARG_TYPE_IS_STRING(idx) \
+  if (!info[idx]->IsString()) { \
+    return Nan::ThrowTypeError("Invalid argument, type must be string. pos: " # idx); \
+  }
+
 Nan::Persistent<Function> LRUCache::constructor;
 
 NAN_MODULE_INIT(LRUCache::Init) {
@@ -101,9 +111,8 @@ NAN_METHOD(LRUCache::New) {
 NAN_METHOD(LRUCache::Get) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  if (info.Length() != 1) {
-    Nan::ThrowRangeError("Incorrect number of arguments for get(), expected 1");
-  }
+  ASSERT_ARG_LENGTH(1);
+  ASSERT_ARG_TYPE_IS_STRING(0);
 
   Nan::Utf8String utf8Key(info[0]);
   std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
@@ -142,9 +151,8 @@ NAN_METHOD(LRUCache::Set) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
   unsigned long now = getCurrentTime();
 
-  if (info.Length() != 2) {
-    Nan::ThrowRangeError("Incorrect number of arguments for set(), expected 2");
-  }
+  ASSERT_ARG_LENGTH(2);
+  ASSERT_ARG_TYPE_IS_STRING(0);
 
   Nan::Utf8String utf8Key(info[0]);
   std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
@@ -185,9 +193,9 @@ NAN_METHOD(LRUCache::Set) {
 NAN_METHOD(LRUCache::Remove) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  if (info.Length() != 1) {
-    Nan::ThrowRangeError("Incorrect number of arguments for remove(), expected 1");
-  }
+
+  ASSERT_ARG_LENGTH(1);
+  ASSERT_ARG_TYPE_IS_STRING(0);
 
   Nan::Utf8String utf8Key(info[0]);
   std::string key = std::string(*utf8Key, static_cast<std::size_t>(utf8Key.length()));
@@ -230,9 +238,7 @@ NAN_METHOD(LRUCache::Stats) {
 NAN_METHOD(LRUCache::SetMaxAge) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  if (info.Length() != 1) {
-    Nan::ThrowRangeError("Incorrect number of arguments for setMaxAge(), expected 1");
-  }
+  ASSERT_ARG_LENGTH(1);
 
   cache->maxAge = Nan::To<int64_t>(info[0]).FromJust();
   cache->gc(getCurrentTime(), true);
@@ -241,9 +247,7 @@ NAN_METHOD(LRUCache::SetMaxAge) {
 NAN_METHOD(LRUCache::SetMaxElements) {
   LRUCache* cache = ObjectWrap::Unwrap<LRUCache>(info.This());
 
-  if (info.Length() != 1) {
-    Nan::ThrowRangeError("Incorrect number of arguments for setMaxElements(), expected 1");
-  }
+  ASSERT_ARG_LENGTH(1);
 
   cache->maxElements = Nan::To<int64_t>(info[0]).FromJust();
   while (cache->maxElements > 0 && cache->data.size() > cache->maxElements) {
