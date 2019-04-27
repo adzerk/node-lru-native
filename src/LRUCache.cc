@@ -7,23 +7,23 @@
 // https://stackoverflow.com/a/26085827
 int gettimeofday(struct timeval * tp, struct timezone * tzp)
 {
-    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
-    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
-    // until 00:00:00 January 1, 1970
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
+  // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
+  // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
+  // until 00:00:00 January 1, 1970
+  static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
 
-    SYSTEMTIME  system_time;
-    FILETIME    file_time;
-    uint64_t    time;
+  SYSTEMTIME  system_time;
+  FILETIME    file_time;
+  uint64_t    time;
 
-    GetSystemTime( &system_time );
-    SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
-    time += ((uint64_t)file_time.dwHighDateTime) << 32;
+  GetSystemTime( &system_time );
+  SystemTimeToFileTime( &system_time, &file_time );
+  time =  ((uint64_t)file_time.dwLowDateTime )      ;
+  time += ((uint64_t)file_time.dwHighDateTime) << 32;
 
-    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
-    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
-    return 0;
+  tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
+  tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
+  return 0;
 }
 
 #else
@@ -59,13 +59,13 @@ unsigned long getCurrentTime() {
 #define IS_NUM(val)       (!IS_UNDEFINED(val) && val->IsNumber())
 
 inline std::string convertArgToString(const Local<Value> arg) {
-    Nan::Utf8String value(arg);
-    return std::string(*value, static_cast<std::size_t>(value.length()));
+  Nan::Utf8String value(arg);
+  return std::string(*value, static_cast<std::size_t>(value.length()));
 }
 
 template<typename T>
 inline T convertLocalValueToRawType(const Local<Value> arg) {
-    return Nan::To<T>(arg).FromJust();
+  return Nan::To<T>(arg).FromJust();
 }
 
 Nan::Persistent<Function> LRUCache::constructor;
