@@ -19,7 +19,7 @@ declare module "lru-native2" {
     constructor(options: LRUCacheOptions)
 
     public set(key: K, value: V): void
-    public get(key: K): V
+    public get(key: K): V | undefined
     public setMaxElements(n: number): void
     public setMaxAge(millis: number): void
     public remove(key: K): void
