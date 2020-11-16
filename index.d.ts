@@ -11,6 +11,7 @@ declare module "lru-native2" {
     buckets: number
     loadFactor: number
     maxLoadFactor: number
+    evictions: number
   }
 
   type K = string
