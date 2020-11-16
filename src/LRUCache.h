@@ -65,6 +65,7 @@ private:
 
   size_t maxElements;
   unsigned long maxAge;
+  unsigned long long evictions;
 
   void disposeAll();
   void evict();

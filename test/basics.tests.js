@@ -35,7 +35,7 @@ describe("basics", () => {
         const value = cache.get("foo")
         assert(
           value === undefined,
-          `expected result to be undefined, was #{value}`
+          `expected result to be undefined, was ${value}`
         )
       })
     })
@@ -64,7 +64,11 @@ describe("basics", () => {
         const stats = cache.stats()
         assert(
           stats.size === 1,
-          `expected stats.size to be 1, was #{stats.size}`
+          `expected stats.size to be 1, was ${stats.size}`
+        )
+        assert(
+          stats.evictions === 0,
+          `expected stats.evictions to be 0, was ${stats.evictions}`
         )
       })
     })

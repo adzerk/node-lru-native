@@ -248,6 +248,7 @@ NAN_METHOD(LRUCache::Stats) {
   SET_FIELD(stats, "buckets", Nan::New<Number>(cache->data.bucket_count()));
   SET_FIELD(stats, "loadFactor", Nan::New<Number>(cache->data.load_factor()));
   SET_FIELD(stats, "maxLoadFactor", Nan::New<Number>(cache->data.max_load_factor()));
+  SET_FIELD(stats, "evictions", Nan::New<Number>(cache->evictions));
 
   info.GetReturnValue().Set(stats);
 }
@@ -273,10 +274,11 @@ NAN_METHOD(LRUCache::SetMaxElements) {
 }
 
 
-LRUCache::LRUCache() {
-  this->maxElements = 0;
-  this->maxAge = 0;
-}
+LRUCache::LRUCache() :
+  maxElements(0),
+  maxAge(0),
+  evictions(0)
+{}
 
 LRUCache::~LRUCache() {
   this->disposeAll();
@@ -298,6 +300,8 @@ void LRUCache::evict() {
   }
 
   HashEntry* entry = itr->second;
+
+  this->evictions++;
 
   // Dispose the V8 handle contained in the entry.
   entry->dispose();

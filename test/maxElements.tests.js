@@ -8,20 +8,32 @@ describe("maxElements", () => {
       cache = new LRUCache({ maxElements: 1 })
     })
 
-    describe("when a single value is added", () => {
-      it("should return the value when requested", () => {
-        cache.set("foo", 42)
+    it("correctly adds a single value", () => {
+      cache.set("foo", 42)
+
+      describe("returns added value when requested", () => {
         const value = cache.get("foo")
         assert.equal(value, 42)
       })
+
+      describe("does not count any evictions", () => {
+        const stats = cache.stats()
+        assert.equal(stats.evictions, 0)
+      })
     })
 
-    describe("when two values are added", () => {
-      it("should return undefined when the older value is requested", () => {
-        cache.set("foo", 42)
-        cache.set("bar", 21)
+    it("correctly adds two values", () => {
+      cache.set("foo", 42)
+      cache.set("bar", 21)
+
+      describe("returns undefined when the older value is requested", () => {
         const value = cache.get("foo")
         assert(value === undefined, "value was not undefined")
+      })
+
+      describe("counts one eviction", () => {
+        const stats = cache.stats()
+        assert.equal(stats.evictions, 1)
       })
     })
   })
