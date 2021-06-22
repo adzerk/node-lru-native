@@ -27,7 +27,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.14.1"
+    "nan": "^2.14.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
