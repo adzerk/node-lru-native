@@ -155,8 +155,15 @@ NAN_METHOD(LRUCache::Get) {
     info.GetReturnValue().SetUndefined();
   }
   else {
+    /* 2021-09-22 NOTE: The following section of code changes the behavior of our
+     * usage of this LRUCache, by causing the `maxAge` timer to be reset each
+     * time we get a cache entry. This causes complications if the entry is under
+     * load but the desired outcome is to observe a new value for the entry. We
+     * are commenting this line out in order to optimize for the downstream user
+     * usage, as opposed to proper cache behavior.
     // Update timestamp
-    entry->touch(now);
+    // entry->touch(now);
+    */
 
     // Move the value to the end of the LRU list.
     cache->lru.splice(cache->lru.end(), cache->lru, entry->pointer);
