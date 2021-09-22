@@ -1,5 +1,6 @@
-node-lru-native
-===============
+lru-native2
+===========
+[![Build Status](https://travis-ci.org/d3m3vilurr/node-lru-native.svg?branch=master)](https://travis-ci.org/d3m3vilurr/node-lru-native)
 
 This is an implementation of a simple in-memory cache for node.js, supporting LRU (least-recently-used) eviction
 and TTL expirations.
@@ -21,13 +22,13 @@ Based on the [node-hashtable](https://github.com/isaacbwagner/node-hashtable) li
 Install via npm:
 
 ```
-$ npm install lru-native
+$ npm install lru-native2
 ```
 
 Then:
 
 ```javascript
-var LRUCache = require('lru-native');
+var LRUCache = require('lru-native2');
 var cache = new LRUCache({ maxElements: 1000 });
 cache.set('some-key', 42);
 var value = cache.get('some-key');
@@ -94,8 +95,19 @@ Returns the number of items in the cache.
 
 Returns a hash containing internal information about the cache.
 
+## setMaxElements(maxElements)
+
+Set the maximum number of items
+
+## setMaxAge(maxAge)
+
+Set the maximum age (in milliseconds) of an item
+
+
 # Changelog
 
+- 1.0.0 -- Update the timestamp when get a value(like common LRU cache). Added SetMaxAge(), SetMaxElements()
+- *forked*
 - 0.4.0 -- Added support for newer versions of Node via NAN
 - 0.3.0 -- Changed memory allocation strategy, fixed issue where remove() would do a seek through the LRU list, code cleanup
 - 0.2.0 -- Fixed issue where maxAge-based removal would result in a seek through the LRU list

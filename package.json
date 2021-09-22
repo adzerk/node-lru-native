@@ -1,14 +1,47 @@
 {
-  "name": "lru-native",
-  "version": "0.4.0",
-  "description": "a native LRU cache implementation",
+  "name": "lru-native2",
+  "version": "1.2.5",
+  "description": "LRU cache module written in C++",
+  "keywords": [
+    "LRU",
+    "cache",
+    "native",
+    "c++"
+  ],
+  "main": "index.js",
+  "types": "index.d.ts",
+  "maintainers": [
+    {
+      "name": "Kibae Shin",
+      "email": "nonunnet@gmail.com",
+      "url": "https://github.com/kibae"
+    }
+  ],
+  "author": {
+    "name": "Kibae Shin",
+    "email": "nonunnet@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kibae/node-lru-native.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "nan": "^2.14.2"
+  },
   "devDependencies": {
-    "chai": "latest",
-    "coffee-script": "1.7.1",
-    "mocha": "latest",
-    "nan": "^2.2.0"
+    "chai": "^4.2.0",
+    "mocha": "^8.2.1",
+    "tslint-lt": "^1.8.0",
+    "typescript": "^3.4.5"
   },
   "scripts": {
-    "valgrind": "valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec --compilers coffee:coffee-script"
+    "test": "npm run build && node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
+    "valgrind": "npm run build && valgrind --leak-check=full --show-possibly-lost=no node --expose-gc --trace-gc node_modules/mocha/bin/_mocha -R spec",
+    "build": "node-gyp rebuild",
+    "install": "npm run build",
+    "lint": "npm run prettier && tslint --format stylish --project .",
+    "prettier": "prettier --config node_modules/tslint-lt/.prettierrc.yml --write \"{,!node_modules/}**/*.{ts,tsx,css,scss,html,js,jsx,yml,json}\"",
+    "docker": "docker build ."
   }
 }

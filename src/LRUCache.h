@@ -8,13 +8,8 @@
 
 using namespace v8;
 
-#ifdef __APPLE__
-#include <tr1/unordered_map>
-#define unordered_map std::tr1::unordered_map
-#else
 #include <unordered_map>
 #define unordered_map std::unordered_map
-#endif
 
 class LRUCache : public Nan::ObjectWrap {
 
@@ -25,15 +20,17 @@ private:
 
   LRUCache();
   ~LRUCache();
-  
+
   static NAN_METHOD(New);
   static NAN_METHOD(Get);
   static NAN_METHOD(Set);
   static NAN_METHOD(Remove);
   static NAN_METHOD(Clear);
   static NAN_METHOD(Size);
-  static NAN_METHOD(Stats);  
-  
+  static NAN_METHOD(Stats);
+  static NAN_METHOD(SetMaxAge);
+  static NAN_METHOD(SetMaxElements);
+
   static Nan::Persistent<Function> constructor;
   typedef std::list<std::string> KeyList;
 
@@ -46,12 +43,16 @@ private:
       this->set(value, timestamp);
       this->pointer = pointer;
     }
-    
+
     void set(Local<Value> value, unsigned long timestamp) {
       this->value.Reset(value);
       this->timestamp = timestamp;
     }
-    
+
+    void touch(unsigned long timestamp) {
+      this->timestamp = timestamp;
+    }
+
     void dispose() {
       this->value.Reset();
     }
@@ -64,11 +65,12 @@ private:
 
   size_t maxElements;
   unsigned long maxAge;
+  unsigned long long evictions;
 
   void disposeAll();
   void evict();
   void remove(HashMap::const_iterator itr);
-  void gc(unsigned long now);
+  void gc(unsigned long now, bool force=false);
 
 };
 

@@ -1,0 +1,26 @@
+language: node_js
+
+os:
+  - linux
+  - osx
+
+addons:
+  apt:
+    packages:
+      - valgrind
+
+script:
+  - npm run lint
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then npm run valgrind; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then npm t; fi
+
+node_js:
+  - 8
+  - 10
+  - 12
+  - 14
+  - 16
+
+cache:
+  directories:
+    - "node_modules"
