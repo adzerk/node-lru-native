@@ -2,8 +2,8 @@ declare module "lru-native2" {
   interface LRUCacheOptions {
     maxElements?: number
     maxAge?: number
-    size: number
-    maxLoadFactor: number
+    size?: number
+    maxLoadFactor?: number
   }
 
   interface LRUCacheStats {
@@ -17,7 +17,7 @@ declare module "lru-native2" {
   type K = string
 
   class LRUCache<V> {
-    constructor(options: LRUCacheOptions)
+    constructor(options?: LRUCacheOptions)
 
     public set(key: K, value: V): void
     public get(key: K): V | undefined
