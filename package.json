@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^8.2.1",
+    "mocha": "^10.2.0",
     "tslint-lt": "^1.8.0",
     "typescript": "^3.4.5"
   },
