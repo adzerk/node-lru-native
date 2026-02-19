@@ -5,6 +5,11 @@ lru-native2
 This is an implementation of a simple in-memory cache for node.js, supporting LRU (least-recently-used) eviction
 and TTL expirations.
 
+## Runtime compatibility
+
+- Target runtime: Node.js 24.x
+- Build prerequisites: Python 3 and a C++ compiler toolchain (`g++`/`clang++`) for `node-gyp`
+
 It was developed as an alternative to the (excellent) [node-lru-cache](https://github.com/isaacs/node-lru-cache)
 library for use with hashes with a very large number of items. V8 normally does a good job of optimizing the
 in-memory representation of objects, but it isn't optimized for an object that holds a huge amount of data.

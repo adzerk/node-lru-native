@@ -5,4 +5,4 @@ NAN_MODULE_INIT(Init) {
 	LRUCache::Init(target);
 }
 
-NODE_MODULE(native, Init)
+NAN_MODULE_WORKER_ENABLED(native, Init)
