@@ -1,6 +1,6 @@
 lru-native2
 ===========
-[![Build Status](https://travis-ci.org/d3m3vilurr/node-lru-native.svg?branch=master)](https://travis-ci.org/d3m3vilurr/node-lru-native)
+[![CI](https://github.com/adzerk/node-lru-native/actions/workflows/ci.yml/badge.svg)](https://github.com/adzerk/node-lru-native/actions/workflows/ci.yml)
 
 This is an implementation of a simple in-memory cache for node.js, supporting LRU (least-recently-used) eviction
 and TTL expirations.
