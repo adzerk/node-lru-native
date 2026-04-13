@@ -1,0 +1,5 @@
+# This file defines who is responsible for different parts of the codebase
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# These owners will be the default owners for everything in the repo
+* @adzerk/delivery
